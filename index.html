@@ -2,55 +2,315 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Artwell Demo</title>
-<link rel="stylesheet" href="style.css">
+<title>Artwell Platform Demo</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Inter,Arial;
+background:#f4f8fb;
+}
+
+.header{
+background:white;
+padding:16px 30px;
+box-shadow:0 2px 6px rgba(0,0,0,0.05);
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.logo{
+font-size:22px;
+font-weight:700;
+color:#2196f3;
+}
+
+.container{
+padding:30px;
+}
+
+.card{
+background:white;
+border-radius:12px;
+padding:20px;
+margin-bottom:20px;
+box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+
+.button{
+background:#2196f3;
+border:none;
+padding:10px 16px;
+color:white;
+border-radius:8px;
+cursor:pointer;
+margin-right:10px;
+}
+
+.button.secondary{
+background:#e3f2fd;
+color:#2196f3;
+}
+
+.input{
+padding:10px;
+border:1px solid #ddd;
+border-radius:8px;
+width:220px;
+margin-bottom:10px;
+}
+
+.hidden{display:none;}
+
+.status{
+padding:4px 10px;
+border-radius:6px;
+color:white;
+font-size:12px;
+margin-left:10px;
+}
+
+.NEW{background:#90a4ae;}
+.CHECK{background:#ff9800;}
+.APPROVAL{background:#3f51b5;}
+.DONE{background:#4caf50;}
+.REJECT{background:#f44336;}
+
+.project{
+border-bottom:1px solid #eee;
+padding:10px 0;
+}
+
+.doc{
+border:1px solid #e3f2fd;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<div id="login">
+<div class="header">
+<div class="logo">ARTWELL PLATFORM</div>
+<div id="userBlock"></div>
+</div>
 
-<h2>Вход</h2>
+<div class="container">
 
-<select id="role">
+<div id="loginCard" class="card">
+
+<h2>Вход в систему</h2>
+
+<select id="role" class="input">
 <option value="customer">Заказчик</option>
 <option value="contractor">Подрядчик</option>
 </select>
 
-<input id="loginInput" placeholder="Login">
-<input id="passInput" placeholder="Password" type="password">
+<br>
 
-<button onclick="login()">Войти</button>
+<input id="login" class="input" placeholder="Login TEST">
+<br>
+<input id="pass" type="password" class="input" placeholder="Password 123456">
 
-</div>
-
-<div id="customer" class="hidden">
-
-<h2>Заказчик ID: <span id="customerId"></span></h2>
-
-<button onclick="addProject()">Добавить проект по ID</button>
-
-<div id="projects"></div>
-
-<h3>Документы</h3>
-<div id="customerDocs"></div>
+<br>
+<button class="button" onclick="login()">Войти</button>
 
 </div>
 
-<div id="contractor" class="hidden">
+<div id="app" class="hidden">
 
-<h2>Подрядчик ID: <span id="contractorId"></span></h2>
+<div id="actions"></div>
 
-<button onclick="createProject()">Создать проект</button>
-<button onclick="uploadDoc()">Загрузить документ</button>
-
-<div id="contractorProjects"></div>
-
-<h3>Документы</h3>
-<div id="contractorDocs"></div>
+<div id="projectsBlock"></div>
 
 </div>
 
-<script src="app.js"></script>
+</div>
+
+<script>
+
+let role=""
+let userId=Math.floor(Math.random()*1000)
+
+let projects=[]
+let documents=[]
+
+const statuses=["NEW","CHECK","APPROVAL","DONE","REJECT"]
+
+function login(){
+
+const l=document.getElementById("login").value
+const p=document.getElementById("pass").value
+role=document.getElementById("role").value
+
+if(l==="TEST" && p==="123456"){
+
+document.getElementById("loginCard").style.display="none"
+document.getElementById("app").classList.remove("hidden")
+
+document.getElementById("userBlock").innerHTML=
+role+" ID "+userId
+
+renderUI()
+
+}else alert("Wrong credentials")
+
+}
+
+function renderUI(){
+
+if(role==="contractor"){
+
+document.getElementById("actions").innerHTML=`
+
+<button class="button" onclick="createProject()">Создать проект</button>
+<button class="button secondary" onclick="uploadDoc()">Загрузить XML</button>
+
+`
+
+}else{
+
+document.getElementById("actions").innerHTML=`
+
+<button class="button" onclick="addProject()">Добавить проект по ID</button>
+
+`
+
+}
+
+renderProjects()
+
+}
+
+function createProject(){
+
+const name=prompt("Название проекта")
+const customerId=prompt("ID заказчика")
+
+projects.push({
+id:Date.now(),
+name,
+customerId
+})
+
+renderProjects()
+
+}
+
+function addProject(){
+
+const id=prompt("ID проекта")
+
+projects.push({
+id,
+name:"Проект "+id
+})
+
+renderProjects()
+
+}
+
+function uploadDoc(){
+
+const name=prompt("Название документа")
+
+documents.push({
+id:Date.now(),
+name,
+version:1,
+status:"CHECK"
+})
+
+renderProjects()
+
+}
+
+function renderProjects(){
+
+let html=""
+
+projects.forEach(p=>{
+
+html+=`
+<div class="card">
+
+<div class="project">
+<b>${p.name}</b>
+<br>
+ID: ${p.id}
+<br>
+Заказчик: ${p.customerId||"-"}
+</div>
+
+${renderDocs(p.id)}
+
+</div>
+`
+
+})
+
+document.getElementById("projectsBlock").innerHTML=html
+
+}
+
+function renderDocs(projectId){
+
+let html=""
+
+documents.forEach(d=>{
+
+html+=`
+<div class="doc">
+${d.name}
+
+<span class="status ${d.status}">
+${d.status}
+</span>
+
+<br>
+Версия ${d.version}
+
+<br><br>
+
+<button class="button secondary" onclick="viewDoc()">Просмотр</button>
+<button class="button secondary" onclick="newVersion(${d.id})">Новая версия</button>
+
+</div>
+`
+
+})
+
+return html
+
+}
+
+function newVersion(id){
+
+documents=documents.map(d=>{
+if(d.id===id){
+d.version++
+d.status=statuses[Math.floor(Math.random()*statuses.length)]
+}
+return d
+})
+
+renderProjects()
+
+}
+
+function viewDoc(){
+
+alert("Открытие XML документа (Demo)")
+
+}
+
+</script>
+
 </body>
 </html>
