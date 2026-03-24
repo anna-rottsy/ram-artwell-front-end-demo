@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Artwell Demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="login">
+
+<h2>Вход</h2>
+
+<select id="role">
+<option value="customer">Заказчик</option>
+<option value="contractor">Подрядчик</option>
+</select>
+
+<input id="loginInput" placeholder="Login">
+<input id="passInput" placeholder="Password" type="password">
+
+<button onclick="login()">Войти</button>
+
+</div>
+
+<div id="customer" class="hidden">
+
+<h2>Заказчик ID: <span id="customerId"></span></h2>
+
+<button onclick="addProject()">Добавить проект по ID</button>
+
+<div id="projects"></div>
+
+<h3>Документы</h3>
+<div id="customerDocs"></div>
+
+</div>
+
+<div id="contractor" class="hidden">
+
+<h2>Подрядчик ID: <span id="contractorId"></span></h2>
+
+<button onclick="createProject()">Создать проект</button>
+<button onclick="uploadDoc()">Загрузить документ</button>
+
+<div id="contractorProjects"></div>
+
+<h3>Документы</h3>
+<div id="contractorDocs"></div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
