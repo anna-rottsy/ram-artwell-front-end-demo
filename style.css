@@ -1,0 +1,26 @@
+body{
+font-family: Arial;
+padding:40px;
+}
+
+.hidden{
+display:none;
+}
+
+.doc{
+border:1px solid #ccc;
+padding:10px;
+margin:10px 0;
+}
+
+.status{
+padding:4px 8px;
+color:white;
+margin-left:10px;
+}
+
+.NEW{background:gray;}
+.VALIDATION{background:orange;}
+.AGREEMENT{background:blue;}
+.DONE{background:green;}
+.REJECTED{background:red;}
