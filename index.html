@@ -1,58 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>ARTWELL P-XML</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Segoe UI;
+background:#f4f8fd;
+display:flex;
+flex-direction:column;
+min-height:100vh;
+}
+
+.header{
+background:white;
+padding:16px 24px;
+display:flex;
+justify-content:space-between;
+box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+
+.toolbar{
+padding:20px 24px;
+display:flex;
+justify-content:flex-end;
+}
+
+.btn{
+background:#2f8cff;
+color:white;
+border:none;
+padding:8px 14px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.container{
+flex:1;
+padding:0 24px 24px;
+}
+
+.project{
+background:white;
+padding:16px;
+border-radius:10px;
+margin-bottom:14px;
+box-shadow:0 6px 14px rgba(0,0,0,0.06);
+}
+
+.projectHeader{
+display:flex;
+justify-content:space-between;
+cursor:pointer;
+}
+
+.docs{
+margin-top:12px;
+border-top:1px solid #e6edf5;
+padding-top:10px;
+}
+
+.doc{
+background:#f7fbff;
+padding:10px;
+border-radius:8px;
+margin-bottom:8px;
+display:flex;
+justify-content:space-between;
+}
+
+.footer{
+margin-top:auto;
+background:white;
+padding:14px;
+text-align:center;
+box-shadow:0 -2px 8px rgba(0,0,0,0.08);
+}
+
+.modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.45);
+display:flex;
+justify-content:center;
+align-items:center;
+}
+
+.hidden{
+display:none;
+}
+
+.modalBox{
+background:white;
+padding:22px;
+border-radius:10px;
+width:400px;
+}
+
+input,textarea{
+width:100%;
+padding:8px;
+margin-top:8px;
+border-radius:6px;
+border:1px solid #cfd8e3;
+}
+
+textarea{
+height:140px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+<div><b>ARTWELL P-XML</b></div>
+<div>Сотрудник | ID</div>
+</div>
+
+<div class="toolbar">
+<button class="btn" onclick="openProjectModal()">+ Проект</button>
+</div>
+
+<div id="projects" class="container"></div>
+
+<div class="footer">
+ARTWELL P-XML | Hackathon 2026
+</div>
+
+<!-- PROJECT MODAL -->
+
+<div id="projectModal" class="modal hidden">
+<div class="modalBox">
+
+<h3>Создать проект</h3>
+
+<input id="projectInput" placeholder="Название">
+
+<br><br>
+
+<button class="btn" onclick="createProject()">Создать</button>
+
+</div>
+</div>
+
+<!-- FILE MODAL -->
+
+<div id="fileModal" class="modal hidden">
+<div class="modalBox">
+
+<h3>Добавить документ</h3>
+
+<input id="fileName" placeholder="Название">
+<input id="creator" placeholder="Сотрудник">
+
+<textarea id="xmlArea"><doc></doc></textarea>
+
+<br>
+
+<button class="btn" onclick="saveFile()">Сохранить</button>
+
+</div>
+</div>
+
 <script>
 
-let projects=[
-{
-id:1,
-name:"ЖК Северный",
-customer:"Петров",
-responsible:"Иванов",
-status:"Активный",
-open:true
-}
-]
-
-let docs=[
-{
-id:1,
-projectId:1,
-name:"Акт скрытых работ",
-version:1,
-creator:"Иванов",
-status:"Новый",
-xml:"<doc></doc>"
-}
-]
-
+let projectsData=[]
+let docsData=[]
 let currentProject=null
-let editDoc=null
 
 function render(){
 
 let html=""
 
-projects.forEach(p=>{
+projectsData.forEach(p=>{
 
 html+=`
 <div class="project">
 
-<div class="projectHeader" onclick="toggleProject(${p.id})">
-
-<div><b>${p.name}</b></div>
-
-<div class="tags">
-<span>${p.customer} | ID</span>
-<span>${p.responsible}</span>
-
-<select onchange="setProjectStatus(${p.id},this.value)">
-<option ${p.status=="Активный"?"selected":""}>Активный</option>
-<option ${p.status=="На паузе"?"selected":""}>На паузе</option>
-<option ${p.status=="Завершен"?"selected":""}>Завершен</option>
-</select>
-
-<button class="btn" onclick="openAddFile(${p.id});event.stopPropagation()">+ Файл</button>
-
-</div>
-
+<div class="projectHeader" onclick="toggle(${p.id})">
+<b>${p.name}</b>
+<button class="btn" onclick="openFileModal(${p.id});event.stopPropagation()">+ Файл</button>
 </div>
 
 ${p.open?renderDocs(p.id):""}
@@ -62,7 +197,7 @@ ${p.open?renderDocs(p.id):""}
 
 })
 
-projectsContainer.innerHTML=html
+document.getElementById("projects").innerHTML=html
 
 }
 
@@ -70,37 +205,16 @@ function renderDocs(pid){
 
 let html=`<div class="docs">`
 
-docs.filter(d=>d.projectId===pid)
+docsData.filter(d=>d.projectId===pid)
 .forEach(d=>{
 
 html+=`
 <div class="doc">
-
-<div class="docLeft">
-
-${d.name}
-
-<span class="tag">v${d.version}</span>
-
-<button onclick="viewDoc(${d.id})">Просмотр</button>
-<button onclick="editDocXML(${d.id})">Редактор</button>
+<div>${d.name} v${d.version}</div>
+<div>
+<button onclick="alert('${d.xml}')">Просмотр</button>
 <button onclick="newVersion(${d.id})">+ Версия</button>
-
 </div>
-
-<div class="docRight">
-
-<span>${d.creator}</span>
-
-<select onchange="setDocStatus(${d.id},this.value)">
-<option ${d.status=="Новый"?"selected":""}>Новый</option>
-<option ${d.status=="На проверке"?"selected":""}>На проверке</option>
-<option ${d.status=="На согласовании"?"selected":""}>На согласовании</option>
-<option ${d.status=="Готов"?"selected":""}>Готов</option>
-</select>
-
-</div>
-
 </div>
 `
 
@@ -111,117 +225,67 @@ return html
 
 }
 
-function toggleProject(id){
-projects=projects.map(p=>{
+function toggle(id){
+projectsData=projectsData.map(p=>{
 if(p.id===id) p.open=!p.open
 return p
 })
 render()
 }
 
-function openAddFile(pid){
-currentProject=pid
-fileModal.classList.remove("hidden")
+function openProjectModal(){
+document.getElementById("projectModal").classList.remove("hidden")
 }
 
-function editDocXML(id){
+function createProject(){
 
-let d=docs.find(x=>x.id===id)
+let name=document.getElementById("projectInput").value
+if(!name) return
 
-editDoc=id
-docName.value=d.name
-docCreator.value=d.creator
-docXML.value=d.xml
-
-fileModal.classList.remove("hidden")
-
-}
-
-function viewDoc(id){
-
-let d=docs.find(x=>x.id===id)
-
-alert(d.xml)
-
-}
-
-function saveDoc(){
-
-if(editDoc){
-
-docs=docs.map(d=>{
-if(d.id===editDoc){
-d.name=docName.value
-d.creator=docCreator.value
-d.xml=docXML.value
-}
-return d
+projectsData.push({
+id:Date.now(),
+name,
+open:true
 })
 
-}else{
+document.getElementById("projectModal").classList.add("hidden")
 
-docs.push({
+render()
+
+}
+
+function openFileModal(pid){
+currentProject=pid
+document.getElementById("fileModal").classList.remove("hidden")
+}
+
+function saveFile(){
+
+docsData.push({
 id:Date.now(),
 projectId:currentProject,
-name:docName.value,
+name:fileName.value,
 version:1,
-creator:docCreator.value,
-status:"Новый",
-xml:docXML.value
+xml:xmlArea.value
 })
 
-}
+document.getElementById("fileModal").classList.add("hidden")
 
-fileModal.classList.add("hidden")
 render()
 
 }
 
 function newVersion(id){
-
-docs=docs.map(d=>{
+docsData=docsData.map(d=>{
 if(d.id===id) d.version++
 return d
 })
-
 render()
-
-}
-
-function setDocStatus(id,status){
-
-docs=docs.map(d=>{
-if(d.id===id) d.status=status
-return d
-})
-
-}
-
-function setProjectStatus(id,status){
-
-projects=projects.map(p=>{
-if(p.id===id) p.status=status
-return p
-})
-
-}
-
-function createProject(){
-
-projects.push({
-id:Date.now(),
-name:projectName.value,
-customer:"—",
-responsible:"—",
-status:"Активный",
-open:true
-})
-
-projectModal.classList.add("hidden")
-render()
-
 }
 
 render()
 
 </script>
+
+</body>
+</html>
