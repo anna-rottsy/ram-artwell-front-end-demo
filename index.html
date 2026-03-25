@@ -2,153 +2,130 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Platform Demo</title>
+<title>ARTWELL P-XML</title>
 
 <style>
 
 body{
 margin:0;
-font-family:Arial;
-background:#e9e9e9;
+font-family:Segoe UI;
+background:#f4f8fc;
+display:flex;
+flex-direction:column;
+min-height:100vh;
 }
 
 .header{
-background:#dcdcdc;
-padding:12px 20px;
+background:white;
+padding:14px 24px;
 display:flex;
 justify-content:space-between;
+box-shadow:0 2px 6px rgba(0,0,0,0.08);
 font-weight:600;
 }
 
 .toolbar{
-background:#8e8e8e;
-padding:10px;
+padding:14px 24px;
 display:flex;
 justify-content:flex-end;
 gap:10px;
 }
 
-.search{
-padding:6px;
-width:160px;
+input{
+padding:8px;
+border-radius:6px;
+border:1px solid #cfd8e3;
 }
 
 .btn{
-background:#4aa3ff;
-border:none;
-padding:6px 12px;
+background:#2f8cff;
 color:white;
+border:none;
+padding:8px 14px;
+border-radius:6px;
 cursor:pointer;
-border-radius:4px;
 }
 
 .container{
-padding:12px;
+flex:1;
+padding:0 24px 24px 24px;
 }
 
 .project{
-background:#cfcfcf;
-padding:10px;
-border-radius:6px;
-margin-bottom:10px;
+background:white;
+border-radius:10px;
+padding:14px;
+margin-bottom:14px;
+box-shadow:0 6px 14px rgba(0,0,0,0.08);
 }
 
 .projectHeader{
 display:flex;
 justify-content:space-between;
-align-items:center;
-}
-
-.tag{
-background:#efefef;
-padding:4px 8px;
-border-radius:4px;
-margin-left:6px;
-}
-
-.statusProject{
-background:#4caf50;
-color:white;
-padding:6px 12px;
-border-radius:4px;
-}
-
-.docs{
-background:#1f1f1f;
-padding:10px;
-border-radius:6px;
-margin-top:10px;
-}
-
-.doc{
-background:#3a3a3a;
-padding:8px;
-border-radius:6px;
-margin-bottom:6px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-color:white;
-}
-
-.docLeft{
-display:flex;
-align-items:center;
-gap:8px;
-}
-
-.docRight{
-display:flex;
-align-items:center;
-gap:8px;
-}
-
-.btnSmall{
-background:#4aa3ff;
-border:none;
-padding:4px 8px;
-border-radius:4px;
 cursor:pointer;
 }
 
-.statusDoc{
-background:#4caf50;
-padding:4px 10px;
-border-radius:4px;
+.tags span{
+background:#eef3f9;
+padding:5px 10px;
+border-radius:6px;
+margin-left:6px;
+font-size:13px;
 }
 
-.footer{
-background:#1f1f1f;
+.statusProject{
+background:#39b36e;
 color:white;
-text-align:center;
-padding:10px;
-margin-top:20px;
 }
 
-.modal{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.5);
+.docs{
+margin-top:12px;
+border-top:1px solid #e6edf5;
+padding-top:10px;
+}
+
+.doc{
+background:#f7fbff;
+padding:10px;
+border-radius:8px;
+margin-bottom:8px;
 display:flex;
-justify-content:center;
+justify-content:space-between;
 align-items:center;
 }
 
-.modalContent{
+.actions button{
+margin-left:6px;
+background:#d8e9ff;
+border:none;
+padding:5px 9px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.footer{
+background:white;
+text-align:center;
+padding:14px;
+box-shadow:0 -2px 6px rgba(0,0,0,0.06);
+}
+
+.page{
+display:none;
+padding:30px;
+}
+
+.active{
+display:block;
+}
+
+.uploadBox{
 background:white;
 padding:20px;
-width:600px;
+border-radius:10px;
+width:420px;
+box-shadow:0 10px 25px rgba(0,0,0,0.12);
 }
-
-textarea{
-width:100%;
-height:260px;
-}
-
-.hidden{display:none;}
 
 </style>
 </head>
@@ -156,69 +133,75 @@ height:260px;
 <body>
 
 <div class="header">
-<div>Название платформы</div>
+<div><b>ARTWELL P-XML</b></div>
 <div>Иванов И.И | ID 123</div>
 </div>
 
+<div id="mainPage" class="active">
+
 <div class="toolbar">
-<input class="search" placeholder="Найти">
+<input placeholder="Найти проект">
 <button class="btn" onclick="createProject()">+ Создать проект</button>
 </div>
 
 <div class="container" id="projects"></div>
 
-<div class="footer">
-Название проекта <br>
-Хакатон 2026 | Команда: Верифай
 </div>
 
-<div id="modal" class="modal hidden">
-<div class="modalContent">
-<h3>XML редактор</h3>
-<textarea id="xmlArea"></textarea>
+<div id="uploadPage" class="page">
+<button class="btn" onclick="back()">← Назад</button>
+
+<h2 id="projectTitle"></h2>
+
+<div class="uploadBox">
+
+<h3>Добавить документ</h3>
+
+<input id="docName" placeholder="Название"><br><br>
+<input id="docCreator" placeholder="Сотрудник"><br><br>
+
+<select id="docStatus">
+<option>Новый</option>
+<option>На проверке</option>
+<option>На согласовании</option>
+<option>Готов</option>
+</select>
+
 <br><br>
-<button class="btn" onclick="saveXML()">Сохранить</button>
-<button class="btn" onclick="closeModal()">Закрыть</button>
+
+<input type="file"><br><br>
+
+<button class="btn" onclick="saveDoc()">Загрузить</button>
+
 </div>
+
+</div>
+
+<div class="footer">
+ARTWELL P-XML | Hackathon 2026 | Команда Верифай
 </div>
 
 <script>
+
+let currentProject=null
 
 let projects=[
 {
 id:1,
 name:"ЖК Северный",
-customer:"Петров",
-responsible:"Иванов",
-status:"Активный",
 open:true
-},
-{
-id:2,
-name:"ТЦ Мега",
-customer:"Сидоров",
-responsible:"Кузнецов",
-status:"Активный",
-open:false
 }
 ]
 
 let docs=[
 {
-id:1,
 projectId:1,
-name:"Акт скрытых работ",
+name:"Акт работ",
 version:1,
 creator:"Иванов",
-status:"Готов",
-xml:`<doc>
-<name>Акт</name>
-<version>1</version>
-</doc>`
+status:"Готов"
 }
 ]
-
-let currentDoc=null
 
 function render(){
 
@@ -229,14 +212,14 @@ projects.forEach(p=>{
 html+=`
 <div class="project">
 
-<div class="projectHeader" onclick="toggle(${p.id})">
+<div class="projectHeader">
 
-<div><b>${p.name}</b></div>
+<div onclick="openUpload(${p.id})"><b>${p.name}</b></div>
 
-<div>
-<span class="tag">${p.customer} | ID</span>
-<span class="tag">${p.responsible}</span>
-<span class="statusProject">${p.status}</span>
+<div class="tags">
+<span>Заказчик</span>
+<span>Ответственный</span>
+<span class="statusProject">Активный</span>
 </div>
 
 </div>
@@ -248,7 +231,7 @@ ${p.open?renderDocs(p.id):""}
 
 })
 
-document.getElementById("projects").innerHTML=html
+projectsDiv.innerHTML=html
 
 }
 
@@ -262,18 +245,17 @@ docs.filter(d=>d.projectId===pid)
 html+=`
 <div class="doc">
 
-<div class="docLeft">
+<div>
 ${d.name}
-<span class="tag">Версия ${d.version}</span>
-
-<button class="btnSmall" onclick="openXML(${d.id})">Просмотр</button>
-<button class="btnSmall" onclick="openXML(${d.id})">Редактор</button>
-<button class="btnSmall" onclick="newVersion(${d.id})">+ Версия</button>
+<span class="tags"><span>v${d.version}</span></span>
 </div>
 
-<div class="docRight">
-<span class="tag">${d.creator}</span>
-<span class="statusDoc">${d.status}</span>
+<div class="actions">
+<button>Просмотр</button>
+<button>Редактор</button>
+<button onclick="newVersion('${d.name}')">+ Версия</button>
+<span class="tags"><span>${d.creator}</span></span>
+<span class="tags"><span>${d.status}</span></span>
 </div>
 
 </div>
@@ -287,56 +269,67 @@ return html
 
 }
 
-function toggle(id){
-projects=projects.map(p=>{
-if(p.id===id) p.open=!p.open
-return p
-})
-render()
+function openUpload(id){
+
+currentProject=id
+
+let p=projects.find(x=>x.id===id)
+
+projectTitle.innerText="Проект: "+p.name
+
+mainPage.classList.remove("active")
+uploadPage.classList.add("active")
+
 }
 
-function newVersion(id){
+function back(){
+uploadPage.classList.remove("active")
+mainPage.classList.add("active")
+}
+
+function saveDoc(){
+
+docs.push({
+projectId:currentProject,
+name:docName.value,
+version:1,
+creator:docCreator.value,
+status:docStatus.value
+})
+
+back()
+render()
+
+}
+
+function newVersion(name){
+
 docs=docs.map(d=>{
-if(d.id===id) d.version++
+if(d.name===name) d.version++
 return d
 })
+
 render()
-}
 
-function openXML(id){
-currentDoc=id
-let d=docs.find(x=>x.id===id)
-xmlArea.value=d.xml
-modal.classList.remove("hidden")
-}
-
-function saveXML(){
-docs=docs.map(d=>{
-if(d.id===currentDoc) d.xml=xmlArea.value
-return d
-})
-closeModal()
-}
-
-function closeModal(){
-modal.classList.add("hidden")
 }
 
 function createProject(){
+
 let name=prompt("Название проекта")
+
 projects.push({
 id:Date.now(),
 name,
-customer:"—",
-responsible:"—",
-status:"Новый",
-open:false
+open:true
 })
+
 render()
+
 }
 
 render()
 
 </script>
+
 </body>
 </html>
