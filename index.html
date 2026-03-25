@@ -9,7 +9,7 @@
 body{
 margin:0;
 font-family:Segoe UI;
-background:#f4f8fc;
+background:#f3f7fb;
 display:flex;
 flex-direction:column;
 min-height:100vh;
@@ -17,30 +17,23 @@ min-height:100vh;
 
 .header{
 background:white;
-padding:14px 24px;
+padding:16px 26px;
 display:flex;
 justify-content:space-between;
-box-shadow:0 2px 6px rgba(0,0,0,0.08);
-font-weight:600;
+box-shadow:0 2px 8px rgba(0,0,0,0.08);
 }
 
 .toolbar{
-padding:14px 24px;
+padding:20px 26px;
 display:flex;
 justify-content:flex-end;
 gap:10px;
 }
 
-input{
-padding:8px;
-border-radius:6px;
-border:1px solid #cfd8e3;
-}
-
 .btn{
-background:#2f8cff;
-color:white;
+background:#3a8bfd;
 border:none;
+color:white;
 padding:8px 14px;
 border-radius:6px;
 cursor:pointer;
@@ -48,15 +41,15 @@ cursor:pointer;
 
 .container{
 flex:1;
-padding:0 24px 24px 24px;
+padding:0 26px 30px;
 }
 
 .project{
 background:white;
-border-radius:10px;
-padding:14px;
-margin-bottom:14px;
-box-shadow:0 6px 14px rgba(0,0,0,0.08);
+border-radius:12px;
+padding:16px;
+margin-bottom:16px;
+box-shadow:0 8px 20px rgba(0,0,0,0.06);
 }
 
 .projectHeader{
@@ -66,29 +59,24 @@ cursor:pointer;
 }
 
 .tags span{
-background:#eef3f9;
-padding:5px 10px;
+background:#eef4ff;
+padding:6px 10px;
 border-radius:6px;
 margin-left:6px;
 font-size:13px;
 }
 
-.statusProject{
-background:#39b36e;
-color:white;
-}
-
 .docs{
-margin-top:12px;
-border-top:1px solid #e6edf5;
-padding-top:10px;
+margin-top:14px;
+border-top:1px solid #e5edf7;
+padding-top:12px;
 }
 
 .doc{
 background:#f7fbff;
-padding:10px;
+padding:12px;
 border-radius:8px;
-margin-bottom:8px;
+margin-bottom:10px;
 display:flex;
 justify-content:space-between;
 align-items:center;
@@ -96,9 +84,9 @@ align-items:center;
 
 .actions button{
 margin-left:6px;
-background:#d8e9ff;
+background:#d9e9ff;
 border:none;
-padding:5px 9px;
+padding:6px 10px;
 border-radius:6px;
 cursor:pointer;
 }
@@ -106,25 +94,37 @@ cursor:pointer;
 .footer{
 background:white;
 text-align:center;
-padding:14px;
-box-shadow:0 -2px 6px rgba(0,0,0,0.06);
+padding:16px;
+margin-top:auto;
+box-shadow:0 -2px 8px rgba(0,0,0,0.06);
 }
 
-.page{
-display:none;
-padding:30px;
+.modal{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.5);
+display:flex;
+justify-content:center;
+align-items:center;
 }
 
-.active{
-display:block;
-}
-
-.uploadBox{
+.modalBox{
 background:white;
-padding:20px;
+padding:24px;
 border-radius:10px;
-width:420px;
-box-shadow:0 10px 25px rgba(0,0,0,0.12);
+width:500px;
+}
+
+.hidden{
+display:none;
+}
+
+textarea{
+width:100%;
+height:260px;
 }
 
 </style>
@@ -137,30 +137,27 @@ box-shadow:0 10px 25px rgba(0,0,0,0.12);
 <div>Иванов И.И | ID 123</div>
 </div>
 
-<div id="mainPage" class="active">
-
 <div class="toolbar">
-<input placeholder="Найти проект">
-<button class="btn" onclick="createProject()">+ Создать проект</button>
+<button class="btn" onclick="addProject()">+ Создать проект</button>
 </div>
 
 <div class="container" id="projects"></div>
 
+<div class="footer">
+ARTWELL P-XML | Hackathon 2026 | Команда Верифай
 </div>
 
-<div id="uploadPage" class="page">
-<button class="btn" onclick="back()">← Назад</button>
+<!-- MODAL -->
 
-<h2 id="projectTitle"></h2>
+<div id="modal" class="modal hidden">
+<div class="modalBox">
 
-<div class="uploadBox">
+<h3 id="modalTitle"></h3>
 
-<h3>Добавить документ</h3>
+<input id="fileName" placeholder="Название документа"><br><br>
+<input id="creator" placeholder="Сотрудник"><br><br>
 
-<input id="docName" placeholder="Название"><br><br>
-<input id="docCreator" placeholder="Сотрудник"><br><br>
-
-<select id="docStatus">
+<select id="status">
 <option>Новый</option>
 <option>На проверке</option>
 <option>На согласовании</option>
@@ -169,37 +166,32 @@ box-shadow:0 10px 25px rgba(0,0,0,0.12);
 
 <br><br>
 
-<input type="file"><br><br>
+<textarea id="xml"></textarea><br><br>
 
-<button class="btn" onclick="saveDoc()">Загрузить</button>
+<button class="btn" onclick="saveFile()">Сохранить</button>
+<button class="btn" onclick="closeModal()">Закрыть</button>
 
 </div>
-
-</div>
-
-<div class="footer">
-ARTWELL P-XML | Hackathon 2026 | Команда Верифай
 </div>
 
 <script>
 
 let currentProject=null
+let editDoc=null
 
 let projects=[
-{
-id:1,
-name:"ЖК Северный",
-open:true
-}
+{ id:1,name:"ЖК Северный",open:true }
 ]
 
 let docs=[
 {
+id:1,
 projectId:1,
 name:"Акт работ",
 version:1,
 creator:"Иванов",
-status:"Готов"
+status:"Готов",
+xml:"<doc>example</doc>"
 }
 ]
 
@@ -214,12 +206,13 @@ html+=`
 
 <div class="projectHeader">
 
-<div onclick="openUpload(${p.id})"><b>${p.name}</b></div>
+<div onclick="toggle(${p.id})"><b>${p.name}</b></div>
 
 <div class="tags">
 <span>Заказчик</span>
 <span>Ответственный</span>
-<span class="statusProject">Активный</span>
+<span style="background:#38b26c;color:white;">Активный</span>
+<button class="btn" onclick="openAddFile(${p.id});event.stopPropagation()">+ Файл</button>
 </div>
 
 </div>
@@ -231,7 +224,7 @@ ${p.open?renderDocs(p.id):""}
 
 })
 
-projectsDiv.innerHTML=html
+projects.innerHTML=html
 
 }
 
@@ -246,16 +239,18 @@ html+=`
 <div class="doc">
 
 <div>
-${d.name}
-<span class="tags"><span>v${d.version}</span></span>
+${d.name} <b>v${d.version}</b>
 </div>
 
 <div class="actions">
-<button>Просмотр</button>
-<button>Редактор</button>
-<button onclick="newVersion('${d.name}')">+ Версия</button>
-<span class="tags"><span>${d.creator}</span></span>
-<span class="tags"><span>${d.status}</span></span>
+
+<button onclick="viewDoc(${d.id})">Просмотр</button>
+<button onclick="editDocument(${d.id})">Редактор</button>
+<button onclick="newVersion(${d.id})">+ Версия</button>
+
+<span>${d.creator}</span>
+<span>${d.status}</span>
+
 </div>
 
 </div>
@@ -269,53 +264,17 @@ return html
 
 }
 
-function openUpload(id){
-
-currentProject=id
-
-let p=projects.find(x=>x.id===id)
-
-projectTitle.innerText="Проект: "+p.name
-
-mainPage.classList.remove("active")
-uploadPage.classList.add("active")
-
-}
-
-function back(){
-uploadPage.classList.remove("active")
-mainPage.classList.add("active")
-}
-
-function saveDoc(){
-
-docs.push({
-projectId:currentProject,
-name:docName.value,
-version:1,
-creator:docCreator.value,
-status:docStatus.value
+function toggle(id){
+projects=projects.map(p=>{
+if(p.id===id) p.open=!p.open
+return p
 })
-
-back()
 render()
-
 }
 
-function newVersion(name){
-
-docs=docs.map(d=>{
-if(d.name===name) d.version++
-return d
-})
-
-render()
-
-}
-
-function createProject(){
-
+function addProject(){
 let name=prompt("Название проекта")
+if(!name) return
 
 projects.push({
 id:Date.now(),
@@ -324,7 +283,86 @@ open:true
 })
 
 render()
+}
 
+function openAddFile(pid){
+currentProject=pid
+editDoc=null
+modalTitle.innerText="Добавить документ"
+fileName.value=""
+creator.value=""
+xml.value="<doc></doc>"
+modal.classList.remove("hidden")
+}
+
+function editDocument(id){
+
+let d=docs.find(x=>x.id===id)
+
+editDoc=id
+currentProject=d.projectId
+
+modalTitle.innerText="Редактор XML"
+fileName.value=d.name
+creator.value=d.creator
+xml.value=d.xml
+
+modal.classList.remove("hidden")
+}
+
+function viewDoc(id){
+
+let d=docs.find(x=>x.id===id)
+
+alert(d.xml)
+
+}
+
+function saveFile(){
+
+if(editDoc){
+
+docs=docs.map(d=>{
+if(d.id===editDoc){
+d.name=fileName.value
+d.creator=creator.value
+d.xml=xml.value
+}
+return d
+})
+
+}else{
+
+docs.push({
+id:Date.now(),
+projectId:currentProject,
+name:fileName.value,
+version:1,
+creator:creator.value,
+status:status.value,
+xml:xml.value
+})
+
+}
+
+closeModal()
+render()
+
+}
+
+function newVersion(id){
+
+docs=docs.map(d=>{
+if(d.id===id) d.version++
+return d
+})
+
+render()
+
+}
+
+function closeModal(){
+modal.classList.add("hidden")
 }
 
 render()
