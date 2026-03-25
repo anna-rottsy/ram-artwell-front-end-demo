@@ -9,7 +9,7 @@
 body{
 margin:0;
 font-family:Segoe UI;
-background:#f3f7fb;
+background:#f4f8fd;
 display:flex;
 flex-direction:column;
 min-height:100vh;
@@ -17,37 +17,36 @@ min-height:100vh;
 
 .header{
 background:white;
-padding:16px 26px;
+padding:16px 28px;
 display:flex;
 justify-content:space-between;
-box-shadow:0 2px 8px rgba(0,0,0,0.08);
+box-shadow:0 3px 10px rgba(0,0,0,0.08);
 }
 
 .toolbar{
-padding:20px 26px;
+padding:18px 28px;
 display:flex;
 justify-content:flex-end;
-gap:10px;
 }
 
 .btn{
-background:#3a8bfd;
-border:none;
+background:#2f8cff;
 color:white;
-padding:8px 14px;
-border-radius:6px;
+border:none;
+padding:9px 16px;
+border-radius:8px;
 cursor:pointer;
 }
 
 .container{
 flex:1;
-padding:0 26px 30px;
+padding:0 28px 28px;
 }
 
 .project{
 background:white;
+padding:18px;
 border-radius:12px;
-padding:16px;
 margin-bottom:16px;
 box-shadow:0 8px 20px rgba(0,0,0,0.06);
 }
@@ -58,17 +57,9 @@ justify-content:space-between;
 cursor:pointer;
 }
 
-.tags span{
-background:#eef4ff;
-padding:6px 10px;
-border-radius:6px;
-margin-left:6px;
-font-size:13px;
-}
-
 .docs{
 margin-top:14px;
-border-top:1px solid #e5edf7;
+border-top:1px solid #e6edf7;
 padding-top:12px;
 }
 
@@ -79,24 +70,14 @@ border-radius:8px;
 margin-bottom:10px;
 display:flex;
 justify-content:space-between;
-align-items:center;
-}
-
-.actions button{
-margin-left:6px;
-background:#d9e9ff;
-border:none;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer;
 }
 
 .footer{
-background:white;
-text-align:center;
-padding:16px;
 margin-top:auto;
-box-shadow:0 -2px 8px rgba(0,0,0,0.06);
+background:white;
+padding:16px;
+text-align:center;
+box-shadow:0 -2px 10px rgba(0,0,0,0.08);
 }
 
 .modal{
@@ -105,7 +86,7 @@ top:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,0.5);
+background:rgba(0,0,0,0.45);
 display:flex;
 justify-content:center;
 align-items:center;
@@ -113,18 +94,25 @@ align-items:center;
 
 .modalBox{
 background:white;
-padding:24px;
-border-radius:10px;
-width:500px;
+padding:26px;
+border-radius:12px;
+width:420px;
 }
 
 .hidden{
 display:none;
 }
 
-textarea{
+input,select,textarea{
 width:100%;
-height:260px;
+padding:8px;
+margin-top:8px;
+border-radius:6px;
+border:1px solid #cfd8e3;
+}
+
+textarea{
+height:160px;
 }
 
 </style>
@@ -138,83 +126,78 @@ height:260px;
 </div>
 
 <div class="toolbar">
-<button class="btn" onclick="addProject()">+ Создать проект</button>
+<button class="btn" onclick="openProjectModal()">+ Создать проект</button>
 </div>
 
-<div class="container" id="projects"></div>
+<div class="container" id="projectsContainer"></div>
 
 <div class="footer">
 ARTWELL P-XML | Hackathon 2026 | Команда Верифай
 </div>
 
-<!-- MODAL -->
+<!-- PROJECT MODAL -->
 
-<div id="modal" class="modal hidden">
+<div id="projectModal" class="modal hidden">
 <div class="modalBox">
 
-<h3 id="modalTitle"></h3>
+<h3>Создать проект</h3>
 
-<input id="fileName" placeholder="Название документа"><br><br>
-<input id="creator" placeholder="Сотрудник"><br><br>
+<input id="projectName" placeholder="Название проекта">
 
-<select id="status">
+<br><br>
+
+<button class="btn" onclick="createProject()">Создать</button>
+<button class="btn" onclick="closeProjectModal()">Отмена</button>
+
+</div>
+</div>
+
+<!-- FILE MODAL -->
+
+<div id="fileModal" class="modal hidden">
+<div class="modalBox">
+
+<h3>Добавить документ</h3>
+
+<input id="docName" placeholder="Название">
+<input id="docCreator" placeholder="Сотрудник">
+
+<select id="docStatus">
 <option>Новый</option>
 <option>На проверке</option>
 <option>На согласовании</option>
 <option>Готов</option>
 </select>
 
-<br><br>
+<textarea id="docXML"><doc></doc></textarea>
 
-<textarea id="xml"></textarea><br><br>
+<br>
 
-<button class="btn" onclick="saveFile()">Сохранить</button>
-<button class="btn" onclick="closeModal()">Закрыть</button>
+<button class="btn" onclick="saveDoc()">Сохранить</button>
+<button class="btn" onclick="closeFileModal()">Отмена</button>
 
 </div>
 </div>
 
 <script>
 
-let currentProject=null
-let editDoc=null
-
-let projects=[
-{ id:1,name:"ЖК Северный",open:true }
-]
-
-let docs=[
-{
-id:1,
-projectId:1,
-name:"Акт работ",
-version:1,
-creator:"Иванов",
-status:"Готов",
-xml:"<doc>example</doc>"
-}
-]
+let projectsData=[]
+let docsData=[]
+let currentProjectId=null
 
 function render(){
 
+let container=document.getElementById("projectsContainer")
 let html=""
 
-projects.forEach(p=>{
+projectsData.forEach(p=>{
 
 html+=`
 <div class="project">
 
-<div class="projectHeader">
-
-<div onclick="toggle(${p.id})"><b>${p.name}</b></div>
-
-<div class="tags">
-<span>Заказчик</span>
-<span>Ответственный</span>
-<span style="background:#38b26c;color:white;">Активный</span>
-<button class="btn" onclick="openAddFile(${p.id});event.stopPropagation()">+ Файл</button>
-</div>
-
+<div class="projectHeader" onclick="toggleProject(${p.id})">
+<b>${p.name}</b>
+<button class="btn" onclick="openFileModal(${p.id});event.stopPropagation()">+ Файл</button>
 </div>
 
 ${p.open?renderDocs(p.id):""}
@@ -224,7 +207,7 @@ ${p.open?renderDocs(p.id):""}
 
 })
 
-projects.innerHTML=html
+container.innerHTML=html
 
 }
 
@@ -232,127 +215,89 @@ function renderDocs(pid){
 
 let html=`<div class="docs">`
 
-docs.filter(d=>d.projectId===pid)
+docsData.filter(d=>d.projectId===pid)
 .forEach(d=>{
 
 html+=`
 <div class="doc">
-
+<div>${d.name} v${d.version}</div>
 <div>
-${d.name} <b>v${d.version}</b>
-</div>
-
-<div class="actions">
-
-<button onclick="viewDoc(${d.id})">Просмотр</button>
-<button onclick="editDocument(${d.id})">Редактор</button>
+<button onclick="viewXML('${d.xml}')">Просмотр</button>
 <button onclick="newVersion(${d.id})">+ Версия</button>
-
-<span>${d.creator}</span>
-<span>${d.status}</span>
-
 </div>
-
 </div>
 `
 
 })
 
 html+=`</div>`
-
 return html
 
 }
 
-function toggle(id){
-projects=projects.map(p=>{
+function toggleProject(id){
+
+projectsData=projectsData.map(p=>{
 if(p.id===id) p.open=!p.open
 return p
 })
+
 render()
+
 }
 
-function addProject(){
-let name=prompt("Название проекта")
-if(!name) return
+function openProjectModal(){
+projectModal.classList.remove("hidden")
+}
 
-projects.push({
+function closeProjectModal(){
+projectModal.classList.add("hidden")
+}
+
+function createProject(){
+
+let name=document.getElementById("projectName").value
+
+if(!name) return alert("Введите название")
+
+projectsData.push({
 id:Date.now(),
 name,
 open:true
 })
 
+closeProjectModal()
 render()
-}
-
-function openAddFile(pid){
-currentProject=pid
-editDoc=null
-modalTitle.innerText="Добавить документ"
-fileName.value=""
-creator.value=""
-xml.value="<doc></doc>"
-modal.classList.remove("hidden")
-}
-
-function editDocument(id){
-
-let d=docs.find(x=>x.id===id)
-
-editDoc=id
-currentProject=d.projectId
-
-modalTitle.innerText="Редактор XML"
-fileName.value=d.name
-creator.value=d.creator
-xml.value=d.xml
-
-modal.classList.remove("hidden")
-}
-
-function viewDoc(id){
-
-let d=docs.find(x=>x.id===id)
-
-alert(d.xml)
 
 }
 
-function saveFile(){
-
-if(editDoc){
-
-docs=docs.map(d=>{
-if(d.id===editDoc){
-d.name=fileName.value
-d.creator=creator.value
-d.xml=xml.value
+function openFileModal(pid){
+currentProjectId=pid
+fileModal.classList.remove("hidden")
 }
-return d
-})
 
-}else{
+function closeFileModal(){
+fileModal.classList.add("hidden")
+}
 
-docs.push({
+function saveDoc(){
+
+docsData.push({
 id:Date.now(),
-projectId:currentProject,
-name:fileName.value,
+projectId:currentProjectId,
+name:docName.value,
 version:1,
-creator:creator.value,
-status:status.value,
-xml:xml.value
+xml:docXML.value
 })
 
-}
-
-closeModal()
+closeFileModal()
 render()
 
 }
 
 function newVersion(id){
 
-docs=docs.map(d=>{
+docsData=docsData.map(d=>{
 if(d.id===id) d.version++
 return d
 })
@@ -361,8 +306,8 @@ render()
 
 }
 
-function closeModal(){
-modal.classList.add("hidden")
+function viewXML(xml){
+alert(xml)
 }
 
 render()
