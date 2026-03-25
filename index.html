@@ -2,85 +2,128 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Artwell Demo</title>
+<title>Platform Demo</title>
 
 <style>
 
 body{
 margin:0;
-font-family:Inter,Arial;
-background:#f3f7fb;
+font-family:Arial;
+background:#e9e9e9;
 }
 
 .header{
-background:white;
-padding:18px 30px;
+background:#dcdcdc;
+padding:12px 20px;
 display:flex;
 justify-content:space-between;
-box-shadow:0 2px 8px rgba(0,0,0,0.05);
+font-weight:600;
 }
 
-.logo{
-font-weight:700;
-color:#2196f3;
-font-size:22px;
+.toolbar{
+background:#8e8e8e;
+padding:10px;
+display:flex;
+justify-content:flex-end;
+gap:10px;
+}
+
+.search{
+padding:6px;
+width:160px;
+}
+
+.btn{
+background:#4aa3ff;
+border:none;
+padding:6px 12px;
+color:white;
+cursor:pointer;
+border-radius:4px;
 }
 
 .container{
-padding:30px;
+padding:12px;
 }
 
-.card{
-background:white;
-border-radius:12px;
-padding:20px;
-margin-bottom:16px;
-box-shadow:0 6px 14px rgba(0,0,0,0.06);
+.project{
+background:#cfcfcf;
+padding:10px;
+border-radius:6px;
+margin-bottom:10px;
 }
 
 .projectHeader{
-cursor:pointer;
 display:flex;
 justify-content:space-between;
 align-items:center;
 }
 
-.doc{
-border:1px solid #e3f2fd;
-padding:12px;
-border-radius:10px;
+.tag{
+background:#efefef;
+padding:4px 8px;
+border-radius:4px;
+margin-left:6px;
+}
+
+.statusProject{
+background:#4caf50;
+color:white;
+padding:6px 12px;
+border-radius:4px;
+}
+
+.docs{
+background:#1f1f1f;
+padding:10px;
+border-radius:6px;
 margin-top:10px;
 }
 
-.status{
-padding:4px 10px;
+.doc{
+background:#3a3a3a;
+padding:8px;
 border-radius:6px;
+margin-bottom:6px;
+display:flex;
+align-items:center;
+justify-content:space-between;
 color:white;
-font-size:12px;
 }
 
-.NEW{background:#90a4ae;}
-.CHECK{background:#ff9800;}
-.APPROVAL{background:#3f51b5;}
-.DONE{background:#4caf50;}
-.REJECT{background:#f44336;}
+.docLeft{
+display:flex;
+align-items:center;
+gap:8px;
+}
 
-.button{
-background:#2196f3;
+.docRight{
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+.btnSmall{
+background:#4aa3ff;
 border:none;
-padding:8px 14px;
-border-radius:8px;
-color:white;
+padding:4px 8px;
+border-radius:4px;
 cursor:pointer;
-margin-right:6px;
 }
 
-.secondary{
-background:#e3f2fd;
-color:#2196f3;
+.statusDoc{
+background:#4caf50;
+padding:4px 10px;
+border-radius:4px;
 }
 
-.hidden{display:none;}
+.footer{
+background:#1f1f1f;
+color:white;
+text-align:center;
+padding:10px;
+margin-top:20px;
+}
 
 .modal{
 position:fixed;
@@ -88,7 +131,7 @@ top:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,0.4);
+background:rgba(0,0,0,0.5);
 display:flex;
 justify-content:center;
 align-items:center;
@@ -97,205 +140,85 @@ align-items:center;
 .modalContent{
 background:white;
 padding:20px;
-border-radius:12px;
 width:600px;
 }
 
 textarea{
 width:100%;
-height:250px;
+height:260px;
 }
 
-</style>
+.hidden{display:none;}
 
+</style>
 </head>
 
 <body>
 
 <div class="header">
-<div class="logo">ARTWELL PLATFORM</div>
-<div id="user"></div>
+<div>Название платформы</div>
+<div>Иванов И.И | ID 123</div>
 </div>
 
-<div class="container">
-
-<div id="loginCard" class="card">
-
-<h2>Вход</h2>
-
-<select id="role">
-<option value="contractor">Подрядчик</option>
-<option value="customer">Заказчик</option>
-</select>
-
-<br><br>
-
-<input id="login" placeholder="TEST">
-<br><br>
-<input id="pass" placeholder="123456" type="password">
-<br><br>
-
-<button class="button" onclick="login()">Войти</button>
-
+<div class="toolbar">
+<input class="search" placeholder="Найти">
+<button class="btn" onclick="createProject()">+ Создать проект</button>
 </div>
 
-<div id="app" class="hidden">
+<div class="container" id="projects"></div>
 
-<button class="button" onclick="createProject()">Создать проект</button>
-<button class="button secondary" onclick="uploadDoc()">Загрузить XML</button>
-
-<div id="projects"></div>
-
-</div>
-
+<div class="footer">
+Название проекта <br>
+Хакатон 2026 | Команда: Верифай
 </div>
 
 <div id="modal" class="modal hidden">
 <div class="modalContent">
-
-<h3>XML документ</h3>
-
+<h3>XML редактор</h3>
 <textarea id="xmlArea"></textarea>
-
 <br><br>
-
-<button class="button" onclick="saveXML()">Сохранить</button>
-<button class="button secondary" onclick="closeModal()">Закрыть</button>
-
+<button class="btn" onclick="saveXML()">Сохранить</button>
+<button class="btn" onclick="closeModal()">Закрыть</button>
 </div>
 </div>
 
 <script>
 
-let role=""
-let userId=Math.floor(Math.random()*1000)
-
-let projects=[]
-let documents=[]
-
-const statuses=["NEW","CHECK","APPROVAL","DONE","REJECT"]
-
-let currentDocId=null
-
-function login(){
-
-if(
-document.getElementById("login").value==="TEST" &&
-document.getElementById("pass").value==="123456"
-){
-
-role=document.getElementById("role").value
-
-document.getElementById("loginCard").style.display="none"
-document.getElementById("app").classList.remove("hidden")
-
-document.getElementById("user").innerText=
-role+" ID "+userId
-
-render()
-
-}else alert("Wrong")
-
-}
-
-function createProject(){
-
-const name=prompt("Название проекта")
-
-projects.push({
-id:Date.now(),
-name,
+let projects=[
+{
+id:1,
+name:"ЖК Северный",
+customer:"Петров",
+responsible:"Иванов",
+status:"Активный",
+open:true
+},
+{
+id:2,
+name:"ТЦ Мега",
+customer:"Сидоров",
+responsible:"Кузнецов",
+status:"Активный",
 open:false
-})
-
-render()
-
 }
+]
 
-function uploadDoc(){
-
-const name=prompt("Название XML")
-
-documents.push({
-id:Date.now(),
-projectId:projects[projects.length-1]?.id,
-name,
-status:"NEW",
+let docs=[
+{
+id:1,
+projectId:1,
+name:"Акт скрытых работ",
 version:1,
-employee:"Иванов",
-xml:`<document>
-<name>${name}</name>
+creator:"Иванов",
+status:"Готов",
+xml:`<doc>
+<name>Акт</name>
 <version>1</version>
-</document>`
-})
-
-render()
-
+</doc>`
 }
+]
 
-function toggleProject(id){
-
-projects=projects.map(p=>{
-if(p.id===id) p.open=!p.open
-return p
-})
-
-render()
-
-}
-
-function changeStatus(id,value){
-
-documents=documents.map(d=>{
-if(d.id===id) d.status=value
-return d
-})
-
-render()
-
-}
-
-function newVersion(id){
-
-documents=documents.map(d=>{
-if(d.id===id){
-d.version++
-}
-return d
-})
-
-render()
-
-}
-
-function openXML(id){
-
-currentDocId=id
-
-const doc=documents.find(d=>d.id===id)
-
-document.getElementById("xmlArea").value=doc.xml
-
-document.getElementById("modal").classList.remove("hidden")
-
-}
-
-function saveXML(){
-
-documents=documents.map(d=>{
-if(d.id===currentDocId){
-d.xml=document.getElementById("xmlArea").value
-}
-return d
-})
-
-closeModal()
-
-}
-
-function closeModal(){
-document.getElementById("modal").classList.add("hidden")
-}
+let currentDoc=null
 
 function render(){
 
@@ -304,11 +227,18 @@ let html=""
 projects.forEach(p=>{
 
 html+=`
-<div class="card">
+<div class="project">
 
-<div class="projectHeader" onclick="toggleProject(${p.id})">
-<b>${p.name}</b>
-<span>${p.open?"▲":"▼"}</span>
+<div class="projectHeader" onclick="toggle(${p.id})">
+
+<div><b>${p.name}</b></div>
+
+<div>
+<span class="tag">${p.customer} | ID</span>
+<span class="tag">${p.responsible}</span>
+<span class="statusProject">${p.status}</span>
+</div>
+
 </div>
 
 ${p.open?renderDocs(p.id):""}
@@ -322,366 +252,91 @@ document.getElementById("projects").innerHTML=html
 
 }
 
-function renderDocs(projectId){
+function renderDocs(pid){
 
-let html=""
+let html=`<div class="docs">`
 
-documents
-.filter(d=>d.projectId===projectId)
+docs.filter(d=>d.projectId===pid)
 .forEach(d=>{
 
 html+=`
 <div class="doc">
 
-<b>${d.name}</b>
-
-<span class="status ${d.status}">
-${d.status}
-</span>
-
-<br>
-Версия: ${d.version}
-<br>
-Сотрудник: ${d.employee}
-
-<br><br>
-
-<select onchange="changeStatus(${d.id},this.value)">
-${statuses.map(s=>`
-<option ${s===d.status?"selected":""}>${s}</option>
-`).join("")}
-</select>
-
-<br><br>
-
-<button class="button secondary" onclick="openXML(${d.id})">Просмотр / Редактор</button>
-<button class="button secondary" onclick="newVersion(${d.id})">Новая версия</button>
-
-</div>
-`
-
-})
-
-return html
-
-}
-
-</script>
-
-</body>
-</html><!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<title>Artwell Platform Demo</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Inter,Arial;
-background:#f4f8fb;
-}
-
-.header{
-background:white;
-padding:16px 30px;
-box-shadow:0 2px 6px rgba(0,0,0,0.05);
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.logo{
-font-size:22px;
-font-weight:700;
-color:#2196f3;
-}
-
-.container{
-padding:30px;
-}
-
-.card{
-background:white;
-border-radius:12px;
-padding:20px;
-margin-bottom:20px;
-box-shadow:0 4px 12px rgba(0,0,0,0.05);
-}
-
-.button{
-background:#2196f3;
-border:none;
-padding:10px 16px;
-color:white;
-border-radius:8px;
-cursor:pointer;
-margin-right:10px;
-}
-
-.button.secondary{
-background:#e3f2fd;
-color:#2196f3;
-}
-
-.input{
-padding:10px;
-border:1px solid #ddd;
-border-radius:8px;
-width:220px;
-margin-bottom:10px;
-}
-
-.hidden{display:none;}
-
-.status{
-padding:4px 10px;
-border-radius:6px;
-color:white;
-font-size:12px;
-margin-left:10px;
-}
-
-.NEW{background:#90a4ae;}
-.CHECK{background:#ff9800;}
-.APPROVAL{background:#3f51b5;}
-.DONE{background:#4caf50;}
-.REJECT{background:#f44336;}
-
-.project{
-border-bottom:1px solid #eee;
-padding:10px 0;
-}
-
-.doc{
-border:1px solid #e3f2fd;
-padding:12px;
-border-radius:8px;
-margin-top:10px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="header">
-<div class="logo">ARTWELL PLATFORM</div>
-<div id="userBlock"></div>
-</div>
-
-<div class="container">
-
-<div id="loginCard" class="card">
-
-<h2>Вход в систему</h2>
-
-<select id="role" class="input">
-<option value="customer">Заказчик</option>
-<option value="contractor">Подрядчик</option>
-</select>
-
-<br>
-
-<input id="login" class="input" placeholder="Login TEST">
-<br>
-<input id="pass" type="password" class="input" placeholder="Password 123456">
-
-<br>
-<button class="button" onclick="login()">Войти</button>
-
-</div>
-
-<div id="app" class="hidden">
-
-<div id="actions"></div>
-
-<div id="projectsBlock"></div>
-
-</div>
-
-</div>
-
-<script>
-
-let role=""
-let userId=Math.floor(Math.random()*1000)
-
-let projects=[]
-let documents=[]
-
-const statuses=["NEW","CHECK","APPROVAL","DONE","REJECT"]
-
-function login(){
-
-const l=document.getElementById("login").value
-const p=document.getElementById("pass").value
-role=document.getElementById("role").value
-
-if(l==="TEST" && p==="123456"){
-
-document.getElementById("loginCard").style.display="none"
-document.getElementById("app").classList.remove("hidden")
-
-document.getElementById("userBlock").innerHTML=
-role+" ID "+userId
-
-renderUI()
-
-}else alert("Wrong credentials")
-
-}
-
-function renderUI(){
-
-if(role==="contractor"){
-
-document.getElementById("actions").innerHTML=`
-
-<button class="button" onclick="createProject()">Создать проект</button>
-<button class="button secondary" onclick="uploadDoc()">Загрузить XML</button>
-
-`
-
-}else{
-
-document.getElementById("actions").innerHTML=`
-
-<button class="button" onclick="addProject()">Добавить проект по ID</button>
-
-`
-
-}
-
-renderProjects()
-
-}
-
-function createProject(){
-
-const name=prompt("Название проекта")
-const customerId=prompt("ID заказчика")
-
-projects.push({
-id:Date.now(),
-name,
-customerId
-})
-
-renderProjects()
-
-}
-
-function addProject(){
-
-const id=prompt("ID проекта")
-
-projects.push({
-id,
-name:"Проект "+id
-})
-
-renderProjects()
-
-}
-
-function uploadDoc(){
-
-const name=prompt("Название документа")
-
-documents.push({
-id:Date.now(),
-name,
-version:1,
-status:"CHECK"
-})
-
-renderProjects()
-
-}
-
-function renderProjects(){
-
-let html=""
-
-projects.forEach(p=>{
-
-html+=`
-<div class="card">
-
-<div class="project">
-<b>${p.name}</b>
-<br>
-ID: ${p.id}
-<br>
-Заказчик: ${p.customerId||"-"}
-</div>
-
-${renderDocs(p.id)}
-
-</div>
-`
-
-})
-
-document.getElementById("projectsBlock").innerHTML=html
-
-}
-
-function renderDocs(projectId){
-
-let html=""
-
-documents.forEach(d=>{
-
-html+=`
-<div class="doc">
+<div class="docLeft">
 ${d.name}
+<span class="tag">Версия ${d.version}</span>
 
-<span class="status ${d.status}">
-${d.status}
-</span>
+<button class="btnSmall" onclick="openXML(${d.id})">Просмотр</button>
+<button class="btnSmall" onclick="openXML(${d.id})">Редактор</button>
+<button class="btnSmall" onclick="newVersion(${d.id})">+ Версия</button>
+</div>
 
-<br>
-Версия ${d.version}
-
-<br><br>
-
-<button class="button secondary" onclick="viewDoc()">Просмотр</button>
-<button class="button secondary" onclick="newVersion(${d.id})">Новая версия</button>
+<div class="docRight">
+<span class="tag">${d.creator}</span>
+<span class="statusDoc">${d.status}</span>
+</div>
 
 </div>
 `
 
 })
 
+html+=`</div>`
+
 return html
 
+}
+
+function toggle(id){
+projects=projects.map(p=>{
+if(p.id===id) p.open=!p.open
+return p
+})
+render()
 }
 
 function newVersion(id){
-
-documents=documents.map(d=>{
-if(d.id===id){
-d.version++
-d.status=statuses[Math.floor(Math.random()*statuses.length)]
-}
+docs=docs.map(d=>{
+if(d.id===id) d.version++
 return d
 })
-
-renderProjects()
-
+render()
 }
 
-function viewDoc(){
-
-alert("Открытие XML документа (Demo)")
-
+function openXML(id){
+currentDoc=id
+let d=docs.find(x=>x.id===id)
+xmlArea.value=d.xml
+modal.classList.remove("hidden")
 }
+
+function saveXML(){
+docs=docs.map(d=>{
+if(d.id===currentDoc) d.xml=xmlArea.value
+return d
+})
+closeModal()
+}
+
+function closeModal(){
+modal.classList.add("hidden")
+}
+
+function createProject(){
+let name=prompt("Название проекта")
+projects.push({
+id:Date.now(),
+name,
+customer:"—",
+responsible:"—",
+status:"Новый",
+open:false
+})
+render()
+}
+
+render()
 
 </script>
-
 </body>
 </html>
