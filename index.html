@@ -2,226 +2,279 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Artwell Verify | Enterprise Editor</title>
+    <title>Artwell Verify | Ultimate PLM System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .code-editor { font-family: 'Fira Code', 'Courier New', monospace; background: #020617; color: #94a3b8; line-height: 1.6; }
+        .code-editor { font-family: 'Fira Code', monospace; background: #020617; color: #94a3b8; }
         .animate-up { animation: fadeInUp 0.3s ease-out forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+        .role-transition { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body class="bg-[#020617] text-slate-300 font-sans overflow-hidden">
 
     <div id="app" class="flex h-screen">
         <!-- SIDEBAR -->
-        <aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col shadow-2xl z-20 transition-all">
+        <aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col shadow-2xl z-20">
             <div class="flex items-center gap-4 mb-10">
                 <div class="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fas fa-folder-open text-white text-xl"></i>
+                    <i class="fas fa-project-diagram text-white text-xl"></i>
                 </div>
                 <div>
                     <h1 class="text-white font-black text-xl leading-none uppercase tracking-tighter">Artwell</h1>
-                    <p class="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Verify System</p>
+                    <p id="role-label" class="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1 italic">Подрядчик</p>
                 </div>
             </div>
             
             <div class="space-y-8 flex-1 overflow-y-auto custom-scrollbar pr-2">
                 <div>
                     <div class="flex justify-between items-center mb-4 px-2">
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Проекты / Папки</p>
-                        <!-- Кнопка создания папки для подрядчика -->
-                        <button onclick="createNewFolder()" class="w-6 h-6 bg-slate-800 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center transition shadow-lg">
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic font-serif">Проекты / Папки</p>
+                        <button id="add-folder-btn" onclick="createNewFolder()" class="w-6 h-6 bg-slate-800 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center transition shadow-lg">
                             <i class="fas fa-plus text-[10px]"></i>
                         </button>
                     </div>
                     <nav id="project-nav" class="space-y-1">
-                        <!-- Папки рендерятся через JS -->
+                        <!-- Рендер папок -->
                     </nav>
                 </div>
             </div>
 
-            <div class="mt-auto p-5 bg-slate-900/50 rounded-[2rem] border border-slate-800 shadow-inner">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs">АР</div>
-                    <p class="text-xs font-bold text-white italic">Анна Rottsey</p>
+            <!-- ПЕРЕКЛЮЧАТЕЛЬ РОЛЕЙ -->
+            <div class="mt-auto p-5 bg-slate-900/50 rounded-[2.5rem] border border-slate-800">
+                <p class="text-[9px] font-black text-slate-500 uppercase mb-3 text-center tracking-widest italic">Выберите кабинет</p>
+                <div class="flex gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
+                    <button onclick="setRole('contractor')" id="btn-role-cont" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase bg-blue-600 text-white shadow-lg shadow-blue-600/20">Подрядчик</button>
+                    <button onclick="setRole('client')" id="btn-role-clie" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase text-slate-500 hover:text-white">Заказчик</button>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN -->
+        <!-- MAIN CONTENT -->
         <main class="flex-1 flex flex-col bg-gradient-to-br from-[#020617] to-[#0f172a]">
-            <header class="h-24 px-10 flex items-center justify-between border-b border-slate-800 bg-[#020617]/50 backdrop-blur-xl z-10 shadow-lg shadow-black/10">
+            <header class="h-24 px-10 flex items-center justify-between border-b border-slate-800 bg-[#020617]/50 backdrop-blur-xl z-10">
                 <div>
-                    <p class="text-[9px] font-black text-slate-500 uppercase mb-1 tracking-[0.2em] italic">Текущая директория</p>
+                    <p class="text-[9px] font-black text-slate-500 uppercase mb-1 tracking-[0.2em] italic">Система верификации</p>
                     <h2 id="current-project-title" class="text-2xl font-black text-white uppercase tracking-tight italic">Все документы</h2>
                 </div>
                 
-                <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-white/5 flex items-center gap-3 active:scale-95">
-                    <i class="fas fa-file-upload"></i> ЗАГРУЗИТЬ ФАЙЛ
-                </button>
+                <div id="contractor-header-actions" class="flex items-center gap-4">
+                    <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-white/10 flex items-center gap-3 active:scale-95">
+                        <i class="fas fa-file-upload"></i> ПРИКРЕПИТЬ ФАЙЛ
+                    </button>
+                </div>
             </header>
 
-            <!-- Registry Content -->
             <div id="registry" class="flex-1 p-10 overflow-y-auto custom-scrollbar space-y-4">
-                <!-- Файлы рендерятся тут -->
+                <!-- Файлы -->
             </div>
         </main>
     </div>
 
-    <!-- ADVANCED EDITOR MODAL -->
-    <div id="editorModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-xl">
-        <div class="bg-[#0f172a] w-full max-w-6xl h-[90vh] rounded-[3rem] border border-slate-700 shadow-2xl flex flex-col overflow-hidden animate-up">
-            <!-- Modal Header -->
-            <div class="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-                <div class="flex items-center gap-5 flex-1 mr-10">
-                    <div class="bg-blue-600/20 p-4 rounded-2xl border border-blue-500/20"><i class="fas fa-file-code text-blue-500 text-xl"></i></div>
+    <!-- UNIVERSAL MODAL EDITOR -->
+    <div id="editorModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-2xl">
+        <div class="bg-[#0f172a] w-full max-w-6xl h-[90vh] rounded-[3.5rem] border border-slate-700 shadow-2xl flex flex-col overflow-hidden animate-up">
+            <div class="p-10 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div class="flex items-center gap-6 flex-1 mr-10">
+                    <div id="modal-icon-bg" class="bg-blue-600/20 p-5 rounded-2xl border border-blue-500/20 transition-colors"><i class="fas fa-scroll text-blue-500 text-2xl"></i></div>
                     <div class="flex-1">
-                        <label class="text-[9px] font-black text-slate-500 uppercase block mb-1">Имя документа (редактируемое)</label>
-                        <input id="modalFileName" type="text" class="bg-transparent text-2xl font-black text-white italic tracking-tight uppercase outline-none border-b border-transparent focus:border-blue-500 w-full transition-all">
+                        <label class="text-[9px] font-black text-slate-500 uppercase block mb-1 tracking-widest italic">Идентификатор документа</label>
+                        <input id="modalFileName" type="text" class="bg-transparent text-3xl font-black text-white italic tracking-tighter uppercase outline-none border-b-2 border-transparent focus:border-blue-500 w-full transition-all">
                     </div>
                 </div>
-                <button onclick="closeModal()" class="w-12 h-12 rounded-full bg-slate-800 text-slate-400 hover:text-white transition flex items-center justify-center text-2xl">&times;</button>
+                <button onclick="closeModal()" class="w-14 h-14 rounded-full bg-slate-800 text-slate-500 hover:text-white transition flex items-center justify-center text-3xl font-light shadow-inner">&times;</button>
             </div>
             
             <div class="flex-1 flex overflow-hidden">
-                <!-- Text Editor -->
-                <textarea id="fileContent" class="flex-1 code-editor p-10 outline-none resize-none custom-scrollbar text-sm" spellcheck="false"></textarea>
+                <textarea id="fileContent" class="flex-1 code-editor p-12 outline-none resize-none custom-scrollbar text-sm font-medium leading-relaxed" spellcheck="false"></textarea>
                 
-                <!-- Settings Panel -->
-                <div class="w-80 p-8 space-y-8 bg-slate-900/30 border-l border-slate-800 shrink-0">
-                    <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase block mb-3 tracking-widest">Статус ЖЦ</label>
-                        <select id="in-status" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none">
-                            <option value="новый">⚪ Новый</option>
-                            <option value="в разработке">🟡 В разработке</option>
-                            <option value="готов">🟢 Готов</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="text-[10px] font-black text-slate-500 uppercase block mb-3 tracking-widest">Переместить в папку</label>
-                        <select id="in-proj" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none">
-                            <!-- Опции проектов -->
-                        </select>
+                <div class="w-96 p-10 space-y-10 bg-slate-900/30 border-l border-slate-800 shrink-0">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-500 uppercase block mb-3 tracking-widest italic font-serif">Статус жизненного цикла</label>
+                            <select id="in-status" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-sm text-white font-black outline-none focus:border-blue-500 shadow-inner">
+                                <option value="новый">⚪ Новый</option>
+                                <option value="в разработке">🟡 В разработке</option>
+                                <option value="готов">🟢 Готов</option>
+                            </select>
+                        </div>
+                        <div id="modal-folder-select">
+                            <label class="text-[10px] font-black text-slate-500 uppercase block mb-3 tracking-widest italic font-serif">Директория (Папка)</label>
+                            <select id="in-proj" class="w-full bg-slate-800 border border-slate-700 rounded-2xl p-4 text-sm text-white font-black outline-none focus:border-blue-500 shadow-inner">
+                                <!-- Опции папок -->
+                            </select>
+                        </div>
                     </div>
 
                     <div class="pt-20 space-y-4">
-                        <button onclick="saveDocumentChanges()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-xs uppercase tracking-widest transition shadow-xl shadow-emerald-600/20">Принять изменения</button>
-                        <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white p-5 rounded-2xl font-black text-xs uppercase transition tracking-widest italic">Отмена</button>
+                        <button id="modal-save-btn" onclick="saveAllChanges()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-6 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition shadow-xl shadow-emerald-600/10 active:scale-95">Принять изменения</button>
+                        <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white p-6 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition italic active:scale-95">Закрыть окно</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <input type="file" id="fileInput" class="hidden" onchange="processLocalFile(this)">
+    <input type="file" id="fileInput" class="hidden" onchange="handleFileUpload(this)">
 
     <script>
-        // ИМИТАЦИЯ БД
-        let db = [
-            { id: 1, name: 'MainSchema-2026.xsd', project: 'ЖК Артвелл', status: 'готов', ver: 1, content: '<?xml version="1.0" encoding="UTF-8"?>\n<xs:schema xmlns:xs="http://www.w3.org">...</xs:schema>' },
-            { id: 2, name: 'Notice.txt', project: 'Заметки', status: 'в разработке', ver: 2, content: 'Проверить соответствие XSD схеме Минстроя до 27-го числа.' }
-        ];
-
-        let folders = ['ЖК Артвелл', 'Заметки'];
-        let currentFolder = 'all';
-        let activeId = null;
+        let state = {
+            role: 'contractor',
+            folder: 'all',
+            folders: ['ЖК Артвелл', 'Изыскания'],
+            docs: [
+                { id: 1, name: 'MainSchema-01.xsd', project: 'ЖК Артвелл', status: 'готов', ver: 1, content: '<?xml version="1.0" encoding="UTF-8"?>\n<xs:schema xmlns:xs="http://www.w3.org">...</xs:schema>' },
+                { id: 2, name: 'GeologicalReport-01-00.xsd', project: 'Изыскания', status: 'в разработке', ver: 1, content: '<!-- Geo Report Data -->\n<data>Sample info</data>' }
+            ],
+            activeId: null
+        };
 
         function render() {
-            // 1. Рендер папок в сайдбаре
+            // 1. Сайдбар - Папки
             const nav = document.getElementById('project-nav');
             const folderButtons = `
-                <button onclick="setFolder('all')" class="w-full text-left p-3.5 rounded-2xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between ${currentFolder === 'all' ? 'bg-blue-600/10 text-blue-400' : ''}">
-                    <span>📦 Все документы</span>
+                <button onclick="setFolder('all')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 transition text-[13px] font-black flex items-center gap-3 ${state.folder === 'all' ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-lg shadow-blue-600/5' : 'text-slate-500'}">
+                    <i class="fas fa-layer-group text-[10px]"></i> Все документы
                 </button>
-            ` + folders.map(f => `
-                <button onclick="setFolder('${f}')" class="w-full text-left p-3.5 rounded-2xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between ${currentFolder === f ? 'bg-blue-600/10 text-blue-400' : 'text-slate-400 group'}">
-                    <span class="truncate">📂 ${f}</span>
-                    <i class="fas fa-trash text-[8px] opacity-0 group-hover:opacity-30 hover:!opacity-100 transition" onclick="event.stopPropagation(); deleteFolder('${f}')"></i>
+            ` + state.folders.map(f => `
+                <button onclick="setFolder('${f}')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 transition text-[13px] font-black flex items-center justify-between group ${state.folder === f ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20' : 'text-slate-500'}">
+                    <span class="truncate italic"><i class="fas fa-folder mr-3 opacity-30"></i>${f}</span>
+                    ${state.role === 'contractor' ? `<i class="fas fa-times text-[10px] opacity-0 group-hover:opacity-30 hover:!opacity-100 transition" onclick="event.stopPropagation(); deleteFolder('${f}')"></i>` : ''}
                 </button>
             `).join('');
             nav.innerHTML = folderButtons;
 
-            // 2. Рендер списка документов
+            // 2. Реестр
             const container = document.getElementById('registry');
-            const filtered = currentFolder === 'all' ? db : db.filter(d => d.project === currentFolder);
+            const filtered = state.folder === 'all' ? state.docs : state.docs.filter(d => d.project === state.folder);
             
             container.innerHTML = filtered.map(doc => `
-                <div class="bg-[#0f172a] p-6 rounded-[2.5rem] border border-slate-800/50 flex items-center justify-between transition-all hover:border-blue-500/30 group animate-up shadow-lg">
-                    <div class="flex items-center gap-6">
-                        <div class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-700 shadow-inner group-hover:scale-105 transition"><i class="fas fa-file-code text-slate-600 text-lg"></i></div>
+                <div class="bg-[#0f172a] p-8 rounded-[3.5rem] border border-slate-800/50 flex items-center justify-between transition-all hover:border-blue-500/20 group animate-up shadow-xl shadow-black/5">
+                    <div class="flex items-center gap-8">
+                        <div class="w-16 h-16 bg-slate-900 rounded-3xl flex items-center justify-center border border-slate-700 shadow-inner group-hover:scale-105 transition duration-300">
+                            <i class="fas fa-file-code ${doc.status === 'готов' ? 'text-emerald-500' : 'text-slate-600'} text-xl"></i>
+                        </div>
                         <div>
-                            <div class="flex items-center gap-3 mb-1">
-                                <h4 class="text-lg font-black text-white italic tracking-tighter uppercase">${doc.name}</h4>
-                                <span class="bg-blue-600/10 text-blue-400 text-[9px] px-2 rounded font-black italic uppercase border border-blue-500/10 text-[8px]">v.${doc.ver}</span>
+                            <div class="flex items-center gap-4 mb-2">
+                                <h4 class="text-xl font-black text-white italic tracking-tighter uppercase leading-none">${doc.name}</h4>
+                                <span class="bg-blue-600/10 text-blue-500 text-[10px] px-3 py-1 rounded-full font-black italic uppercase border border-blue-500/10 shadow-sm">v.${doc.ver}</span>
                             </div>
-                            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">${doc.project} • <span class="text-slate-400 font-black">${doc.status.toUpperCase()}</span></p>
+                            <div class="flex gap-6 items-center">
+                                <p class="text-[10px] font-bold text-slate-600 uppercase tracking-[0.2em] italic">${doc.project}</p>
+                                <span class="text-[9px] font-black uppercase tracking-widest px-4 py-1 rounded-full ${getStatusStyle(doc.status)} italic">${doc.status}</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <button onclick="openEditor(${doc.id})" class="bg-slate-900 hover:bg-blue-600 text-slate-400 hover:text-white px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase transition-all border border-slate-800 tracking-widest italic shadow-lg">Редактировать</button>
-                        <button onclick="deleteDocument(${doc.id})" class="w-12 h-12 bg-slate-900 hover:bg-rose-600/10 text-slate-600 hover:text-rose-500 rounded-2xl transition border border-slate-800 flex items-center justify-center active:scale-90"><i class="fas fa-times"></i></button>
+                    <div class="flex items-center gap-5">
+                        <button onclick="openEditor(${doc.id})" class="bg-slate-900 hover:bg-blue-600 text-slate-400 hover:text-white px-10 py-4 rounded-2xl text-[10px] font-black uppercase transition-all border border-slate-800 shadow-lg tracking-widest italic">
+                            ${state.role === 'contractor' ? 'Править' : 'Контроль'}
+                        </button>
+                        ${state.role === 'contractor' ? `
+                            <button onclick="deleteDoc(${doc.id})" class="w-14 h-14 bg-slate-900 hover:bg-rose-600/10 text-slate-700 hover:text-rose-500 rounded-2xl transition border border-slate-800 flex items-center justify-center text-lg active:scale-90">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
+
+            // Управление UI по ролям
+            document.getElementById('contractor-header-actions').style.display = state.role === 'contractor' ? 'flex' : 'none';
+            document.getElementById('add-folder-btn').style.display = state.role === 'contractor' ? 'flex' : 'none';
+        }
+
+        function getStatusStyle(s) {
+            return {
+                'новый': 'bg-slate-800 text-slate-500',
+                'в разработке': 'bg-amber-500/10 text-amber-500 border border-amber-500/10',
+                'готов': 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/10'
+            }[s];
+        }
+
+        function setRole(role) {
+            state.role = role;
+            document.getElementById('role-label').innerText = role === 'contractor' ? 'Подрядчик' : 'Заказчик';
+            
+            // Смена стиля кнопок
+            const btnCont = document.getElementById('btn-role-cont');
+            const btnClie = document.getElementById('btn-role-clie');
+            
+            if (role === 'contractor') {
+                btnCont.className = "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase bg-blue-600 text-white shadow-lg shadow-blue-600/20";
+                btnClie.className = "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase text-slate-500 hover:text-white";
+            } else {
+                btnClie.className = "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase bg-blue-600 text-white shadow-lg shadow-blue-600/20";
+                btnCont.className = "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase text-slate-500 hover:text-white";
+            }
+            render();
         }
 
         function createNewFolder() {
-            const name = prompt('Название новой папки:');
-            if (name && !folders.includes(name)) {
-                folders.push(name);
+            const name = prompt('Название новой папки проекта:');
+            if (name && !state.folders.includes(name)) {
+                state.folders.push(name);
                 render();
             }
         }
 
-        function deleteFolder(name) {
-            if (confirm(`Удалить папку "${name}" и переместить файлы в корень?`)) {
-                folders = folders.filter(f => f !== name);
-                db.forEach(d => { if(d.project === name) d.project = folders[0] || 'Все'; });
-                if (currentFolder === name) currentFolder = 'all';
+        function deleteFolder(f) {
+            if (confirm(`Удалить папку "${f}"? Документы останутся в общем реестре.`)) {
+                state.folders = state.folders.filter(x => x !== f);
+                state.docs.forEach(d => { if(d.project === f) d.project = 'ЖК Артвелл'; });
+                if (state.folder === f) state.folder = 'all';
                 render();
             }
         }
 
         function openEditor(id) {
-            activeId = id;
-            const doc = db.find(d => d.id === id);
+            state.activeId = id;
+            const doc = state.docs.find(d => d.id === id);
             
             document.getElementById('modalFileName').value = doc.name;
             document.getElementById('fileContent').value = doc.content;
             document.getElementById('in-status').value = doc.status;
             
-            // Заполняем список папок в модалке
-            const projSelect = document.getElementById('in-proj');
-            projSelect.innerHTML = folders.map(f => `<option value="${f}" ${doc.project === f ? 'selected' : ''}>${f}</option>`).join('');
+            // Права доступа
+            const isClient = (state.role === 'client');
+            document.getElementById('modalFileName').readOnly = isClient;
+            document.getElementById('fileContent').readOnly = isClient;
+            document.getElementById('modal-save-btn').innerText = isClient ? 'Сохранить статус' : 'Принять изменения';
+            document.getElementById('modal-folder-select').style.display = isClient ? 'none' : 'block';
+            document.getElementById('modal-icon-bg').className = isClient ? 'bg-amber-600/20 p-5 rounded-2xl border border-amber-500/20 transition-colors' : 'bg-blue-600/20 p-5 rounded-2xl border border-blue-500/20 transition-colors';
+
+            // Настройка списка папок
+            const projSel = document.getElementById('in-proj');
+            projSel.innerHTML = state.folders.map(f => `<option value="${f}" ${doc.project === f ? 'selected' : ''}>${f}</option>`).join('');
 
             document.getElementById('editorModal').style.display = 'flex';
         }
 
-        function saveDocumentChanges() {
-            const doc = db.find(d => d.id === activeId);
+        function saveAllChanges() {
+            const doc = state.docs.find(d => d.id === state.activeId);
             doc.name = document.getElementById('modalFileName').value;
             doc.content = document.getElementById('fileContent').value;
             doc.status = document.getElementById('in-status').value;
-            doc.project = document.getElementById('in-proj').value;
+            if (state.role === 'contractor') {
+                doc.project = document.getElementById('in-proj').value;
+            }
             doc.ver += 1;
             
             closeModal();
             render();
         }
 
-        function processLocalFile(input) {
+        function handleFileUpload(input) {
             if (!input.files.length) return;
             const file = input.files;
             const reader = new FileReader();
             reader.onload = function(e) {
-                db.unshift({
+                state.docs.unshift({
                     id: Date.now(),
                     name: file.name,
-                    project: currentFolder === 'all' ? (folders[0] || 'Все') : currentFolder,
+                    project: state.folder === 'all' ? state.folders : state.folder,
                     status: 'новый',
                     ver: 1,
                     content: e.target.result
@@ -231,18 +284,18 @@
             reader.readAsText(file);
         }
 
-        function deleteDocument(id) {
-            if (confirm('Удалить файл?')) {
-                db = db.filter(d => d.id !== id);
+        function deleteDoc(id) {
+            if (confirm('Удалить файл навсегда?')) {
+                state.docs = state.docs.filter(d => d.id !== id);
                 render();
             }
         }
 
-        function setFolder(f) { currentFolder = f; document.getElementById('current-project-title').innerText = f === 'all' ? 'Все документы' : f; render(); }
+        function setFolder(f) { state.folder = f; document.getElementById('current-project-title').innerText = f === 'all' ? 'Все документы' : f; render(); }
         function closeModal() { document.getElementById('editorModal').style.display = 'none'; }
 
-        // Запуск
-        render();
+        // Стартовый рендер
+        setRole('contractor');
     </script>
 </body>
 </html>
