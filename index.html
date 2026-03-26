@@ -22,35 +22,108 @@
         
         .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+        
+        .project-item { transition: all 0.15s ease; }
+        .project-item:hover { transform: translateX(2px); }
+        .project-item.active { border-left: 3px solid #3b82f6; padding-left: 13px; margin-left: -3px; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
     <div id="app" v-cloak class="min-h-screen flex">
         
         <!-- SIDEBAR -->
-        <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-xl z-20 hidden md:flex">
-            <div class="p-6 border-b border-slate-800 flex items-center gap-3">
-                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
-                    <i class="fas fa-layer-group text-xl text-white"></i>
+        <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-xl z-30 hidden md:flex">
+            <!-- Header -->
+            <div class="p-5 border-b border-slate-800">
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-layer-group text-xl text-white"></i>
+                    </div>
+                    <span class="font-bold text-lg tracking-tight">ARTWELL <span class="text-blue-400">XML</span></span>
                 </div>
-                <span class="font-bold text-lg tracking-tight">ARTWELL <span class="text-blue-400">XML</span></span>
+                <p class="text-[10px] text-slate-400 ml-11">Система верификации</p>
             </div>
             
-            <nav class="flex-1 p-4 space-y-2 mt-4">
-                <button @click="currentTab = 'registry'" :class="navClass('registry')">
-                    <i class="fas fa-list-ul w-6"></i> Реестр документов
+            <!-- Main Navigation -->
+            <nav class="p-4 space-y-1">
+                <button @click="currentTab = 'registry'; selectProject('all')" 
+                        :class="navClass('registry', !selectedProject || selectedProject === 'all')">
+                    <i class="fas fa-list-ul w-5"></i> Реестр документов
                 </button>
-                <button @click="currentTab = 'upload'" v-if="role === 'contractor'" :class="navClass('upload')">
-                    <i class="fas fa-file-upload w-6"></i> Загрузка XML
+                <button @click="currentTab = 'upload'" v-if="role === 'contractor'" 
+                        :class="navClass('upload', selectedProject !== 'all')">
+                    <i class="fas fa-file-upload w-5"></i> Загрузка XML
                 </button>
                 <button @click="currentTab = 'audit'" :class="navClass('audit')">
-                    <i class="fas fa-history w-6"></i> Аудит-лог
+                    <i class="fas fa-history w-5"></i> Аудит-лог
                 </button>
             </nav>
 
-            <div class="p-6 border-t border-slate-800 bg-slate-950/50">
-                <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Ваша роль</label>
-                <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+            <!-- Projects Section -->
+            <div class="px-4 mt-2">
+                <div class="flex items-center justify-between mb-3 px-1">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Проекты</span>
+                    <button @click="selectProject('all')" 
+                            v-if="selectedProject && selectedProject !== 'all'"
+                            class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition">
+                        Сбросить
+                    </button>
+                </div>
+                
+                <!-- All Projects Option -->
+                <div @click="selectProject('all')" 
+                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                     :class="!selectedProject || selectedProject === 'all' 
+                        ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'">
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                        <i class="fas fa-th-large"></i>
+                    </div>
+                    <span class="text-sm font-medium flex-1 truncate">Все проекты</span>
+                    <span class="text-[10px] bg-slate-700 px-2 py-0.5 rounded-full">{{ totalDocsCount }}</span>
+                </div>
+                
+                <!-- Project List -->
+                <div v-for="project in projects" :key="project.id"
+                     @click="selectProject(project.id)"
+                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                     :class="selectedProject === project.id 
+                        ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'">
+                    
+                    <!-- Project Avatar with Color -->
+                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
+                         :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
+                        <span :style="{ color: project.color }">{{ project.icon }}</span>
+                    </div>
+                    
+                    <span class="text-sm font-medium flex-1 truncate">{{ project.name }}</span>
+                    
+                    <!-- Document Count Badge -->
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                          :class="getProjectBadgeClass(project.id)">
+                        {{ getProjectDocsCount(project.id) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Bottom Section: User & Role -->
+            <div class="mt-auto p-4 border-t border-slate-800 bg-slate-950/30">
+                <!-- Current User -->
+                <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-800">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10" 
+                         :style="{ backgroundColor: currentUser.color }">
+                        {{ getInitials(currentUser) }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-white truncate">{{ currentUser.name }}</p>
+                        <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
+                    </div>
+                </div>
+                
+                <!-- Role Selector -->
+                <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
+                <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
                     <option value="contractor">👷 Подрядчик</option>
                     <option value="client">🕵️ Заказчик</option>
                 </select>
@@ -60,104 +133,109 @@
         <!-- MAIN AREA -->
         <main class="flex-1 flex flex-col h-screen overflow-hidden w-full">
             <!-- Top Nav -->
-            <header class="h-16 bg-white border-b flex items-center justify-between px-6 shadow-sm shrink-0">
-                <div class="flex items-center gap-4">
-                    <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
+            <header class="h-14 bg-white border-b flex items-center justify-between px-5 shadow-sm shrink-0">
+                <div class="flex items-center gap-3">
+                    <!-- Mobile Menu Toggle -->
+                    <button class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition">
+                        <i class="fas fa-bars text-slate-600"></i>
+                    </button>
                     
-                    <!-- Фильтр по проектам -->
-                    <div v-if="currentTab === 'registry'" class="hidden sm:flex items-center gap-2 ml-4">
-                        <i class="fas fa-folder-open text-slate-400 text-sm"></i>
-                        <select v-model="selectedProject" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                            <option value="all">Все проекты</option>
-                            <option v-for="project in projects" :key="project.id" :value="project.id">
-                                {{ project.name }}
-                            </option>
-                        </select>
-                    </div>
+                    <h2 class="text-base font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
+                    
+                    <!-- Active Project Indicator -->
+                    <span v-if="selectedProject && selectedProject !== 'all'" 
+                          class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                        <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getProjectColor(selectedProject) }"></span>
+                        {{ getProjectName(selectedProject) }}
+                    </span>
                 </div>
                 
-                <div class="flex items-center gap-4">
-                    <!-- Текущий пользователь -->
-                    <div class="hidden sm:flex items-center gap-2 text-right">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" 
-                             :style="{ backgroundColor: getCurrentUserColor(currentUser) }">
-                            {{ getInitials(currentUser) }}
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-slate-800">{{ currentUser.name }}</p>
-                            <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
-                        </div>
+                <div class="flex items-center gap-3">
+                    <!-- Search (always visible) -->
+                    <div v-if="currentTab === 'registry'" class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+                        <input type="text" v-model="searchQuery" placeholder="Поиск..." 
+                               class="w-40 sm:w-56 pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
                     </div>
-                    <button @click="toggleUserMenu" class="sm:hidden w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white font-bold shadow-md">
+                    
+                    <!-- Mobile User Avatar -->
+                    <button @click="toggleUserMenu" class="sm:hidden w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white" 
+                            :style="{ backgroundColor: currentUser.color }">
                         {{ getInitials(currentUser) }}
                     </button>
                 </div>
             </header>
 
-            <!-- Выпадающее меню пользователя (мобильное) -->
+            <!-- Mobile User Menu Dropdown -->
             <transition name="fade">
-                <div v-if="showUserMenu" class="absolute right-4 top-16 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 w-48">
+                <div v-if="showUserMenu" class="sm:hidden absolute right-4 top-14 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 w-48">
                     <div class="px-4 py-2 border-b border-slate-100">
                         <p class="text-xs font-bold text-slate-800">{{ currentUser.name }}</p>
                         <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
                     </div>
-                    <button @click="currentUser = employees[0]; showUserMenu = false" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition">👷 Анна (Подрядчик)</button>
-                    <button @click="currentUser = employees[1]; showUserMenu = false" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition">🕵️ Михаил (Заказчик)</button>
-                    <button @click="currentUser = employees[2]; showUserMenu = false" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition">📋 Елена (Сметчик)</button>
+                    <button v-for="emp in employees" :key="emp.id"
+                            @click="currentUser = emp; showUserMenu = false" 
+                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold" 
+                              :style="{ backgroundColor: emp.color }">
+                            {{ getInitials(emp) }}
+                        </span>
+                        {{ emp.name }}
+                    </button>
                 </div>
             </transition>
 
             <!-- Scrollable Content -->
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="flex-1 overflow-y-auto p-5">
                 
                 <!-- TAB: REGISTRY -->
                 <section v-if="currentTab === 'registry'" class="animate-fade-in">
-                    <!-- Панель фильтров -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-4 flex flex-wrap gap-3 items-center">
-                        <div class="relative flex-1 min-w-[200px]">
-                            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                            <input type="text" v-model="searchQuery" placeholder="Поиск по номеру..." class="w-full pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition">
-                        </div>
-                        
-                        <select v-model="filterResponsible" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                            <option value="all">Все ответственные</option>
+                    <!-- Secondary Filters Bar -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 flex flex-wrap gap-2 items-center">
+                        <select v-model="filterResponsible" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            <option value="all">👤 Все ответственные</option>
                             <option v-for="emp in employees" :key="emp.id" :value="emp.id">
                                 {{ emp.name }}
                             </option>
                         </select>
                         
-                        <select v-model="filterStatus" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                            <option value="all">Все статусы</option>
+                        <select v-model="filterStatus" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            <option value="all">📊 Все статусы</option>
                             <option value="valid">✅ Валиден</option>
                             <option value="invalid">❌ Ошибка</option>
                             <option value="processing">⏳ Анализ</option>
                         </select>
+                        
+                        <button v-if="filterResponsible !== 'all' || filterStatus !== 'all'"
+                                @click="filterResponsible = 'all'; filterStatus = 'all'"
+                                class="text-xs text-slate-500 hover:text-slate-700 font-medium px-2 py-1.5 transition">
+                            ✕ Сбросить фильтры
+                        </button>
                     </div>
 
+                    <!-- Documents Table -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200">
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Документ</th>
-                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Проект</th>
-                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Ответственный</th>
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black hidden sm:table-cell">Ответственный</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-center">Версия</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Статус</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-right">Действие</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                <tr v-for="doc in filteredDocuments" :key="doc.id" class="hover:bg-blue-50/30 transition-colors group">
+                                <tr v-for="doc in filteredDocuments" :key="doc.id" 
+                                    class="hover:bg-blue-50/30 transition-colors group cursor-pointer"
+                                    @click="openModal(doc)">
                                     <td class="p-4">
                                         <div class="font-bold text-slate-800 group-hover:text-blue-600 transition">{{ doc.number }}</div>
-                                        <div class="text-[11px] text-slate-400 font-medium">{{ formatDate(doc.updatedAt) }}</div>
+                                        <div class="text-[11px] text-slate-400 font-medium mt-0.5">{{ formatDate(doc.updatedAt) }}</div>
                                     </td>
-                                    <td class="p-4">
-                                        <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded">{{ getProjectName(doc.projectId) }}</span>
-                                    </td>
-                                    <td class="p-4">
+                                    <td class="p-4 hidden sm:table-cell">
                                         <div class="flex items-center gap-2">
-                                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0" 
+                                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0 ring-1 ring-black/5" 
                                                  :style="{ backgroundColor: getUserColor(doc.responsibleId) }">
                                                 {{ getUserInitials(doc.responsibleId) }}
                                             </div>
@@ -165,19 +243,29 @@
                                         </div>
                                     </td>
                                     <td class="p-4 text-center">
-                                        <span class="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold text-slate-600">v{{ doc.version }}</span>
+                                        <span class="bg-slate-100 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600">v{{ doc.version }}</span>
                                     </td>
                                     <td class="p-4">
                                         <span :class="statusBadge(doc.status)">{{ statusText(doc.status) }}</span>
                                     </td>
                                     <td class="p-4 text-right">
-                                        <button @click="openModal(doc)" class="text-xs font-bold text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-600 px-4 py-1.5 rounded-lg transition">КАРТОЧКА</button>
+                                        <button @click.stop="openModal(doc)" 
+                                                class="text-xs font-bold text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-600 px-4 py-1.5 rounded-lg transition">
+                                            Открыть
+                                        </button>
                                     </td>
                                 </tr>
                                 <tr v-if="filteredDocuments.length === 0">
-                                    <td colspan="6" class="p-8 text-center text-slate-400 text-sm">
-                                        <i class="fas fa-inbox text-2xl mb-2 block opacity-50"></i>
-                                        Документы не найдены по заданным фильтрам
+                                    <td colspan="5" class="p-10 text-center">
+                                        <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                            <i class="fas fa-folder-open text-slate-400 text-xl"></i>
+                                        </div>
+                                        <p class="text-sm font-medium text-slate-600">Документы не найдены</p>
+                                        <p class="text-[11px] text-slate-400 mt-1">Попробуйте изменить фильтры или загрузить новый документ</p>
+                                        <button v-if="role === 'contractor'" @click="currentTab = 'upload'" 
+                                                class="mt-4 text-xs font-bold text-blue-600 hover:text-blue-700 transition">
+                                            → Загрузить документ
+                                        </button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -186,81 +274,105 @@
                 </section>
 
                 <!-- TAB: UPLOAD -->
-                <section v-if="currentTab === 'upload'" class="max-w-2xl mx-auto py-8">
+                <section v-if="currentTab === 'upload'" class="max-w-2xl mx-auto py-6">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                        <h3 class="text-lg font-bold text-slate-800 mb-4">Загрузка нового документа</h3>
-                        
-                        <!-- Форма выбора проекта и ответственного -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
                             <div>
-                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Проект *</label>
-                                <select v-model="uploadForm.projectId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                <h3 class="text-lg font-bold text-slate-800">Загрузка документа</h3>
+                                <p class="text-[11px] text-slate-400">Проект: <span class="font-medium text-slate-600">{{ getProjectName(uploadForm.projectId) }}</span></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Fields -->
+                        <div class="grid grid-cols-1 gap-4 mb-6">
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Проект</label>
+                                <select v-model="uploadForm.projectId" 
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
                                     <option v-for="project in projects" :key="project.id" :value="project.id">
                                         {{ project.name }}
                                     </option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Ответственный *</label>
-                                <select v-model="uploadForm.responsibleId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Ответственный</label>
+                                <select v-model="uploadForm.responsibleId" 
+                                        class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
                                     <option v-for="emp in employees" :key="emp.id" :value="emp.id">
                                         {{ emp.name }} • {{ emp.role }}
                                     </option>
                                 </select>
                             </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Комментарий</label>
+                                <input type="text" v-model="uploadForm.comment" 
+                                       placeholder="Описание изменений (необязательно)" 
+                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            </div>
                         </div>
                         
-                        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Комментарий к версии</label>
-                        <input type="text" v-model="uploadForm.comment" placeholder="Например: Исправлены ошибки в разделе 3.2" 
-                               class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm mb-6 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        
-                        <!-- Drop zone -->
-                        <div @click="triggerUpload" class="border-3 border-dashed border-slate-200 bg-slate-50 rounded-2xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/50 transition cursor-pointer group">
+                        <!-- Drop Zone -->
+                        <div @click="triggerUpload" 
+                             class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition cursor-pointer group">
                             <input type="file" ref="fileInput" @change="handleFile" class="hidden" accept=".xml">
                             
-                            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                            <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform shadow-sm">
+                                <i class="fas fa-file-code text-blue-500 text-xl"></i>
                             </div>
-                            <p class="text-sm font-bold text-slate-700 mb-1">Нажмите или перетащите файл</p>
-                            <p class="text-[11px] text-slate-400">Только .xml файлы, до 50 МБ</p>
+                            <p class="text-sm font-bold text-slate-700 mb-1">Выберите XML-файл</p>
+                            <p class="text-[11px] text-slate-400">Макс. размер 50 МБ</p>
                             
-                            <div v-if="uploadForm.fileName" class="mt-4 p-3 bg-white rounded-lg border border-slate-200">
-                                <p class="text-xs font-medium text-slate-700 flex items-center gap-2">
-                                    <i class="fas fa-file-code text-blue-500"></i>
-                                    {{ uploadForm.fileName }}
-                                </p>
+                            <!-- Selected File Preview -->
+                            <div v-if="uploadForm.fileName" class="mt-4 p-3 bg-white rounded-lg border border-slate-200 flex items-center gap-2">
+                                <i class="fas fa-file-code text-blue-500 text-sm"></i>
+                                <span class="text-xs font-medium text-slate-700 truncate">{{ uploadForm.fileName }}</span>
+                                <button @click.stop="uploadForm.fileName = ''; if(fileInput) fileInput.value = ''" 
+                                        class="ml-auto text-slate-400 hover:text-rose-500 transition">
+                                    <i class="fas fa-times text-xs"></i>
+                                </button>
                             </div>
                         </div>
                         
-                        <div class="mt-6 flex justify-end gap-3">
-                            <button @click="resetUploadForm" class="px-5 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition">Сбросить</button>
-                            <button @click="submitUpload" :disabled="!canUpload" 
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20">
-                                <i class="fas fa-check mr-2" v-if="!uploading"></i>
-                                <i class="fas fa-spinner fa-spin mr-2" v-else></i>
-                                {{ uploading ? 'Загрузка...' : 'Загрузить документ' }}
+                        <!-- Actions -->
+                        <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button @click="resetUploadForm" 
+                                    class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition">
+                                Сбросить
+                            </button>
+                            <button @click="submitUpload" :disabled="!canUpload || uploading" 
+                                    class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 flex items-center gap-2">
+                                <i class="fas fa-spinner fa-spin" v-if="uploading"></i>
+                                {{ uploading ? 'Обработка...' : 'Загрузить' }}
                             </button>
                         </div>
                     </div>
                 </section>
 
                 <!-- TAB: AUDIT LOG -->
-                <section v-if="currentTab === 'audit'" class="space-y-3 max-w-4xl mx-auto">
-                    <div v-for="log in auditLogs" :key="log.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 hover:shadow-md transition">
-                        <div :class="logIconClass(log.type)" class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-base">
-                            <i :class="logIcon(log.type)"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-slate-800 leading-tight">{{ log.message }}</p>
-                            <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                <span class="text-[10px] text-slate-500 font-medium flex items-center gap-1">
-                                    <i class="fas fa-user text-[10px]"></i> {{ log.userName }}
-                                </span>
-                                <span class="text-[10px] text-slate-300">•</span>
-                                <span class="text-[10px] text-slate-400">{{ log.time }}</span>
-                                <span v-if="log.projectName" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">
-                                    {{ log.projectName }}
-                                </span>
+                <section v-if="currentTab === 'audit'" class="max-w-3xl mx-auto">
+                    <div class="space-y-3">
+                        <div v-for="log in filteredAuditLogs" :key="log.id" 
+                             class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 hover:shadow-md transition">
+                            <div :class="logIconClass(log.type)" 
+                                 class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-base ring-1 ring-inset ring-black/5">
+                                <i :class="logIcon(log.type)"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-slate-800 leading-tight">{{ log.message }}</p>
+                                <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                                    <span class="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                                        <i class="fas fa-user text-[10px]"></i> {{ log.userName }}
+                                    </span>
+                                    <span class="text-[10px] text-slate-300">•</span>
+                                    <span class="text-[10px] text-slate-400">{{ formatTime(log.time) }}</span>
+                                    <span v-if="log.projectName" 
+                                          class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium text-slate-600">
+                                        {{ log.projectName }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -271,7 +383,8 @@
 
         <!-- MODAL: DOCUMENT DETAILS -->
         <transition name="modal">
-            <div v-if="selectedDoc" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeModal" @keydown.escape="closeModal" tabindex="-1">
+            <div v-if="selectedDoc" class="fixed inset-0 z-[100] flex items-center justify-center p-4" 
+                 @click.self="closeModal" @keydown.escape="closeModal" tabindex="-1">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
                 
                 <div class="modal-card relative bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
@@ -282,24 +395,29 @@
                                 <h3 class="text-xl font-black text-slate-800">{{ selectedDoc.number }}</h3>
                                 <span :class="statusBadge(selectedDoc.status)" class="text-[10px] py-0.5 px-2.5">{{ statusText(selectedDoc.status) }}</span>
                             </div>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                {{ getProjectName(selectedDoc.projectId) }} • Версия {{ selectedDoc.version }}.0
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                <span class="inline-flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getProjectColor(selectedDoc.projectId) }"></span>
+                                    {{ getProjectName(selectedDoc.projectId) }}
+                                </span>
+                                • Версия {{ selectedDoc.version }}.0
                             </p>
                         </div>
-                        <button @click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0">
+                        <button @click="closeModal" 
+                                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0">
                             <i class="fas fa-times text-lg"></i>
                         </button>
                     </div>
                     
                     <!-- Content -->
                     <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-y-auto">
-                        <!-- Левая колонка: Метаданные -->
+                        <!-- Left: Metadata -->
                         <div class="lg:col-span-2 space-y-5">
-                            <!-- Блок ответственного -->
+                            <!-- Responsible Person -->
                             <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Ответственный за документ</label>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Ответственный</label>
                                 <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" 
+                                    <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold ring-2 ring-white shadow-sm" 
                                          :style="{ backgroundColor: getUserColor(selectedDoc.responsibleId) }">
                                         {{ getUserInitials(selectedDoc.responsibleId) }}
                                     </div>
@@ -310,52 +428,52 @@
                                 </div>
                             </div>
                             
-                            <!-- Ошибки валидации -->
+                            <!-- Validation Errors -->
                             <div v-if="selectedDoc.status === 'invalid'" class="p-4 bg-rose-50 rounded-xl border border-rose-100">
                                 <p class="text-[10px] uppercase font-black text-rose-400 mb-2 flex items-center gap-2">
-                                    <i class="fas fa-triangle-exclamation"></i> Обнаружены ошибки XSD
+                                    <i class="fas fa-triangle-exclamation"></i> Ошибки валидации
                                 </p>
-                                <ul class="text-xs text-rose-700 space-y-1">
-                                    <li class="flex gap-2"><span class="font-bold">Линия 42:</span> Элемент '&lt;Contractor&gt;' не соответствует схеме</li>
-                                    <li class="flex gap-2"><span class="font-bold">Линия 89:</span> Отсутствует обязательный атрибут 'date'</li>
+                                <ul class="text-xs text-rose-700 space-y-1.5">
+                                    <li class="flex gap-2"><span class="font-bold shrink-0">Линия 42:</span> Элемент '&lt;Contractor&gt;' не соответствует схеме Минстроя</li>
+                                    <li class="flex gap-2"><span class="font-bold shrink-0">Линия 89:</span> Отсутствует обязательный атрибут 'date'</li>
                                 </ul>
                             </div>
                             
                             <div v-else-if="selectedDoc.status === 'processing'" class="p-4 bg-amber-50 rounded-xl border border-amber-100">
                                 <p class="text-[10px] uppercase font-black text-amber-400 mb-2 flex items-center gap-2">
-                                    <i class="fas fa-spinner fa-spin"></i> Идет обработка
+                                    <i class="fas fa-spinner fa-spin"></i> Обработка
                                 </p>
-                                <p class="text-xs text-amber-700">Пожалуйста, подождите, выполняется проверка схемы Минстроя РФ...</p>
+                                <p class="text-xs text-amber-700">Выполняется проверка соответствия XSD-схемам...</p>
                             </div>
                             
-                            <!-- Объект строительства -->
+                            <!-- Object Info -->
                             <div>
-                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Объект</label>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Объект строительства</label>
                                 <p class="text-sm font-bold text-slate-800">ЖК «Артвелл Парк», корпус 2</p>
                             </div>
                         </div>
 
-                        <!-- Правая колонка: История версий -->
+                        <!-- Right: Version History -->
                         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col">
                             <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2 shrink-0">
-                                <i class="fas fa-code-branch text-blue-500"></i> История версий
+                                <i class="fas fa-code-branch text-blue-500"></i> Версии
                             </h4>
                             <div class="space-y-3 overflow-y-auto flex-1 pr-1">
                                 <div v-for="version in [...selectedDoc.versions].reverse()" :key="version.id" 
                                      class="p-3 bg-white rounded-lg border border-slate-100 hover:border-blue-200 transition group">
                                     <div class="flex items-center justify-between mb-2">
                                         <span class="text-xs font-black text-slate-700">v{{ version.number }}.0</span>
-                                        <span class="text-[10px] text-slate-400">{{ formatDate(version.uploadedAt) }}</span>
+                                        <span class="text-[10px] text-slate-400">{{ formatTime(version.uploadedAt) }}</span>
                                     </div>
-                                    <p v-if="version.comment" class="text-[11px] text-slate-600 mb-2 italic">«{{ version.comment }}»</p>
+                                    <p v-if="version.comment" class="text-[11px] text-slate-600 mb-2 italic line-clamp-2">«{{ version.comment }}»</p>
                                     <div class="flex items-center gap-2">
-                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold" 
+                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold ring-1 ring-black/5" 
                                              :style="{ backgroundColor: getUserColor(version.uploadedBy) }">
                                             {{ getUserInitials(version.uploadedBy) }}
                                         </div>
                                         <span class="text-[11px] font-medium text-slate-600">{{ getUserName(version.uploadedBy) }}</span>
                                     </div>
-                                    <button class="mt-2 w-full text-[10px] font-bold text-blue-600 hover:bg-blue-50 py-1.5 rounded transition flex items-center justify-center gap-1">
+                                    <button class="mt-2.5 w-full text-[10px] font-bold text-blue-600 hover:bg-blue-50 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
                                         <i class="fas fa-download"></i> Скачать XML
                                     </button>
                                 </div>
@@ -367,10 +485,11 @@
                     <div class="p-5 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
                         <button v-if="role === 'contractor' && selectedDoc.status !== 'processing'" 
                                 @click="createNewVersion(selectedDoc)" 
-                                class="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition flex items-center gap-2">
+                                class="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition flex items-center gap-2">
                             <i class="fas fa-plus"></i> Новая версия
                         </button>
-                        <button @click="closeModal" class="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
+                        <button @click="closeModal" 
+                                class="px-5 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
                             Закрыть
                         </button>
                     </div>
@@ -384,21 +503,23 @@
 
         createApp({
             setup() {
-                // === ДАННЫЕ ===
+                // === STATE ===
                 const role = ref('contractor');
                 const currentTab = ref('registry');
                 const selectedDoc = ref(null);
                 const showUserMenu = ref(false);
                 const uploading = ref(false);
+                const selectedProject = ref('all'); // 'all' or project ID
                 
-                // Справочники
+                // === DATA: Projects with colors & icons ===
                 const projects = ref([
-                    { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2' },
-                    { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3' },
-                    { id: 'business-center', name: 'БЦ Невский Плаза' },
-                    { id: 'infrastructure', name: 'Инфраструктура квартала' }
+                    { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2', color: '#3b82f6', icon: '🏢' },
+                    { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3', color: '#8b5cf6', icon: '🏗️' },
+                    { id: 'business-center', name: 'БЦ Невский Плаза', color: '#10b981', icon: '🏬' },
+                    { id: 'infrastructure', name: 'Инфраструктура квартала', color: '#f59e0b', icon: '🛣️' }
                 ]);
                 
+                // === DATA: Employees ===
                 const employees = ref([
                     { id: 'anna', name: 'Анна Р.', role: 'Подрядчик', color: '#3b82f6' },
                     { id: 'mikhail', name: 'Михаил К.', role: 'Заказчик', color: '#8b5cf6' },
@@ -406,10 +527,9 @@
                     { id: 'dmitry', name: 'Дмитрий В.', role: 'ГИП', color: '#f59e0b' }
                 ]);
                 
-                // Текущий пользователь (для демо переключаемый)
                 const currentUser = ref(employees.value[0]);
                 
-                // Форма загрузки
+                // === Upload Form ===
                 const uploadForm = ref({
                     projectId: 'park-2',
                     responsibleId: 'anna',
@@ -417,21 +537,19 @@
                     fileName: ''
                 });
                 
-                // Фильтры реестра
+                // === Filters ===
                 const searchQuery = ref('');
-                const selectedProject = ref('all');
                 const filterResponsible = ref('all');
                 const filterStatus = ref('all');
                 
-                // Рефы
                 const fileInput = ref(null);
                 
-                // Счетчики ID
+                // === Counters ===
                 let docIdCounter = 4;
                 let logIdCounter = 4;
                 let versionIdCounter = 4;
 
-                // === ДОКУМЕНТЫ С РАСШИРЕННОЙ СТРУКТУРОЙ ===
+                // === Documents ===
                 const documents = ref([
                     { 
                         id: 1, 
@@ -443,7 +561,7 @@
                         responsibleId: 'anna',
                         versions: [
                             { id: 1, number: 1, uploadedAt: '2026-03-20T10:00:00', uploadedBy: 'anna', comment: 'Первичная загрузка' },
-                            { id: 2, number: 2, uploadedAt: '2026-03-26T14:00:00', uploadedBy: 'anna', comment: 'Исправлены замечания заказчика' }
+                            { id: 2, number: 2, uploadedAt: '2026-03-26T14:00:00', uploadedBy: 'anna', comment: 'Исправлены замечания' }
                         ]
                     },
                     { 
@@ -473,44 +591,53 @@
                 ]);
 
                 const auditLogs = ref([
-                    { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', message: 'Загружен документ: АКТ-001/2026 (v2.0)', time: '2026-03-26T14:00:00' },
+                    { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', message: 'Загружен: АКТ-001/2026 (v2.0)', time: '2026-03-26T14:00:00' },
                     { id: 2, type: 'error', userId: 'system', projectId: 'park-2', message: 'Ошибка валидации: ЖУР-БЕТ-042', time: '2026-03-25T09:15:00' },
                     { id: 3, type: 'view', userId: 'mikhail', projectId: 'business-center', message: 'Просмотр: ПРЕДПИС-12-А', time: '2026-03-24T18:30:00' }
                 ]);
 
-                // === ВЫЧИСЛЯЕМЫЕ СВОЙСТВА ===
+                // === COMPUTED ===
                 const currentTabName = computed(() => ({
                     registry: 'Реестр документации',
-                    upload: 'Новая загрузка',
+                    upload: 'Новая загрузка', 
                     audit: 'Журнал событий'
                 }[currentTab.value]));
+
+                const totalDocsCount = computed(() => documents.value.length);
 
                 const filteredDocuments = computed(() => {
                     let result = [...documents.value];
                     
-                    // Фильтр по проекту
-                    if (selectedProject.value !== 'all') {
+                    // Project filter from sidebar
+                    if (selectedProject.value && selectedProject.value !== 'all') {
                         result = result.filter(d => d.projectId === selectedProject.value);
                     }
                     
-                    // Фильтр по ответственному
+                    // Responsible filter
                     if (filterResponsible.value !== 'all') {
                         result = result.filter(d => d.responsibleId === filterResponsible.value);
                     }
                     
-                    // Фильтр по статусу
+                    // Status filter
                     if (filterStatus.value !== 'all') {
                         result = result.filter(d => d.status === filterStatus.value);
                     }
                     
-                    // Поиск
+                    // Search
                     if (searchQuery.value) {
                         const q = searchQuery.value.toLowerCase();
                         result = result.filter(d => d.number.toLowerCase().includes(q));
                     }
                     
-                    // Сортировка: новые сверху
                     return result.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+                });
+
+                const filteredAuditLogs = computed(() => {
+                    let result = [...auditLogs.value];
+                    if (selectedProject.value && selectedProject.value !== 'all') {
+                        result = result.filter(l => l.projectId === selectedProject.value);
+                    }
+                    return result.sort((a, b) => new Date(b.time) - new Date(a.time));
                 });
 
                 const canUpload = computed(() => 
@@ -519,8 +646,9 @@
                     uploadForm.value.fileName
                 );
 
-                // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+                // === HELPERS ===
                 const getProjectName = (id) => projects.value.find(p => p.id === id)?.name || '—';
+                const getProjectColor = (id) => projects.value.find(p => p.id === id)?.color || '#64748b';
                 
                 const getUserName = (id) => employees.value.find(e => e.id === id)?.name || 'Неизвестный';
                 const getUserRole = (id) => employees.value.find(e => e.id === id)?.role || '';
@@ -530,22 +658,44 @@
                     const user = employees.value.find(e => e.id === id);
                     return user ? getInitials(user) : '?';
                 };
-                const getCurrentUserColor = (user) => user.color || '#64748b';
+
+                const getProjectDocsCount = (projectId) => {
+                    return documents.value.filter(d => d.projectId === projectId).length;
+                };
+
+                const getProjectBadgeClass = (projectId) => {
+                    const count = getProjectDocsCount(projectId);
+                    const base = 'font-medium shrink-0 ';
+                    if (count === 0) return base + 'bg-slate-700 text-slate-300';
+                    const project = projects.value.find(p => p.id === projectId);
+                    return base + `bg-[${project?.color}20] text-[${project?.color}]`;
+                };
 
                 const formatDate = (isoString) => {
                     if (!isoString) return '—';
-                    const date = new Date(isoString);
-                    return date.toLocaleString('ru-RU', { 
+                    return new Date(isoString).toLocaleString('ru-RU', { 
                         day: '2-digit', month: '2-digit', year: 'numeric',
                         hour: '2-digit', minute: '2-digit' 
                     }).replace(',', '');
+                };
+
+                const formatTime = (isoString) => {
+                    if (!isoString) return '—';
+                    const date = new Date(isoString);
+                    const now = new Date();
+                    const isToday = date.toDateString() === now.toDateString();
+                    
+                    if (isToday) {
+                        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                    }
+                    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
                 };
 
                 const statusBadge = (s) => {
                     const base = "px-2.5 py-1 rounded-lg text-[10px] font-black tracking-tighter uppercase inline-flex items-center gap-1 ";
                     const styles = {
                         valid: "bg-emerald-50 text-emerald-600 border border-emerald-200",
-                        invalid: "bg-rose-50 text-rose-600 border border-rose-200",
+                        invalid: "bg-rose-50 text-rose-600 border border-rose-200", 
                         processing: "bg-amber-50 text-amber-600 border border-amber-200"
                     };
                     return base + (styles[s] || styles.processing);
@@ -557,16 +707,18 @@
                     processing: 'Анализ...' 
                 }[s]);
 
-                const navClass = (tab) => `w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ${
-                    currentTab.value === tab 
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 translate-x-1' 
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`;
+                const navClass = (tab, isActive) => {
+                    const base = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ";
+                    if (currentTab.value === tab) {
+                        return base + "bg-blue-600 text-white shadow-lg shadow-blue-600/25";
+                    }
+                    return base + "text-slate-400 hover:text-white hover:bg-slate-800";
+                };
 
                 const logIconClass = (t) => ({
-                    upload: 'bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-200',
-                    error: 'bg-rose-50 text-rose-600 ring-1 ring-inset ring-rose-200',
-                    view: 'bg-indigo-50 text-indigo-600 ring-1 ring-inset ring-indigo-200'
+                    upload: 'bg-blue-50 text-blue-600',
+                    error: 'bg-rose-50 text-rose-600',
+                    view: 'bg-indigo-50 text-indigo-600'
                 }[t]);
 
                 const logIcon = (t) => ({
@@ -575,7 +727,15 @@
                     view: 'fas fa-eye'
                 }[t]);
 
-                // === УПРАВЛЕНИЕ МОДАЛКОЙ ===
+                // === PROJECT SELECTION ===
+                const selectProject = (projectId) => {
+                    selectedProject.value = projectId;
+                    if (currentTab.value !== 'registry') {
+                        currentTab.value = 'registry';
+                    }
+                };
+
+                // === MODAL ===
                 const handleKeydown = (e) => {
                     if (e.key === 'Escape' && selectedDoc.value) closeModal();
                 };
@@ -588,7 +748,7 @@
                 });
 
                 const openModal = (doc) => {
-                    selectedDoc.value = { ...doc }; // Копия для реактивности
+                    selectedDoc.value = { ...doc, versions: [...doc.versions] };
                     document.body.style.overflow = 'hidden';
                 };
                 
@@ -601,7 +761,7 @@
                     showUserMenu.value = !showUserMenu.value;
                 };
 
-                // === ЗАГРУЗКА ФАЙЛА ===
+                // === FILE UPLOAD ===
                 const triggerUpload = () => fileInput.value?.click();
 
                 const handleFile = (e) => {
@@ -625,8 +785,8 @@
 
                 const resetUploadForm = () => {
                     uploadForm.value = {
-                        projectId: 'park-2',
-                        responsibleId: 'anna',
+                        projectId: selectedProject.value !== 'all' ? selectedProject.value : 'park-2',
+                        responsibleId: currentUser.value.id,
                         comment: '',
                         fileName: ''
                     };
@@ -637,14 +797,11 @@
                     if (!canUpload.value) return;
                     
                     uploading.value = true;
-                    
-                    // Эмуляция загрузки
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    await new Promise(resolve => setTimeout(resolve, 1200));
                     
                     const fileName = uploadForm.value.fileName.replace('.xml', '').toUpperCase();
                     const now = new Date().toISOString();
                     
-                    // Создаем документ
                     const newDoc = {
                         id: docIdCounter++,
                         number: fileName,
@@ -664,97 +821,84 @@
                     
                     documents.value.unshift(newDoc);
                     
-                    // Лог события
                     auditLogs.value.unshift({
                         id: logIdCounter++,
                         type: 'upload',
                         userId: uploadForm.value.responsibleId,
                         projectId: uploadForm.value.projectId,
-                        message: `Загружен документ: ${fileName} (v1.0)`,
+                        message: `Загружен: ${fileName} (v1.0)`,
                         time: now
                     });
                     
-                    // Эмуляция валидации
+                    // Simulate validation
                     setTimeout(() => {
                         const doc = documents.value.find(d => d.id === newDoc.id);
                         if (doc) {
-                            const isValid = Math.random() > 0.3; // 70% успех
-                            doc.status = isValid ? 'valid' : 'invalid';
-                            
+                            doc.status = Math.random() > 0.3 ? 'valid' : 'invalid';
                             auditLogs.value.unshift({
                                 id: logIdCounter++,
-                                type: isValid ? 'upload' : 'error',
+                                type: doc.status === 'valid' ? 'upload' : 'error',
                                 userId: 'system',
                                 projectId: doc.projectId,
-                                message: isValid 
+                                message: doc.status === 'valid' 
                                     ? `Валидация успешна: ${doc.number}` 
                                     : `Ошибка валидации: ${doc.number}`,
                                 time: new Date().toISOString()
                             });
                         }
-                    }, 2000);
+                    }, 1800);
                     
-                    // Сброс формы и переход в реестр
                     resetUploadForm();
-                    currentTab.value = 'registry';
                     uploading.value = false;
                 };
 
-                // === НОВАЯ ВЕРСИЯ ДОКУМЕНТА ===
+                // === NEW VERSION ===
                 const createNewVersion = (doc) => {
                     const now = new Date().toISOString();
-                    const newVersionNum = doc.version + 1;
+                    const newVer = doc.version + 1;
                     
-                    // Добавляем версию в историю
                     doc.versions.push({
                         id: versionIdCounter++,
-                        number: newVersionNum,
+                        number: newVer,
                         uploadedAt: now,
                         uploadedBy: currentUser.value.id,
-                        comment: 'Новая версия документа'
+                        comment: 'Новая версия'
                     });
                     
-                    // Обновляем документ
-                    doc.version = newVersionNum;
+                    doc.version = newVer;
                     doc.updatedAt = now;
                     doc.status = 'processing';
                     doc.responsibleId = currentUser.value.id;
                     
-                    // Лог
                     auditLogs.value.unshift({
                         id: logIdCounter++,
                         type: 'upload',
                         userId: currentUser.value.id,
                         projectId: doc.projectId,
-                        message: `Создана версия ${newVersionNum}.0: ${doc.number}`,
+                        message: `Версия ${newVer}.0: ${doc.number}`,
                         time: now
                     });
                     
-                    // Эмуляция валидации новой версии
                     setTimeout(() => {
                         const d = documents.value.find(x => x.id === doc.id);
-                        if (d) {
-                            d.status = Math.random() > 0.3 ? 'valid' : 'invalid';
-                        }
+                        if (d) d.status = Math.random() > 0.3 ? 'valid' : 'invalid';
                     }, 1500);
                     
                     closeModal();
                 };
 
                 return {
-                    // State
                     role, currentTab, currentTabName, selectedDoc, showUserMenu, uploading,
-                    projects, employees, currentUser, documents, auditLogs,
-                    uploadForm, searchQuery, selectedProject, filterResponsible, filterStatus,
-                    filteredDocuments, canUpload, fileInput,
+                    selectedProject, projects, employees, currentUser, documents, auditLogs,
+                    uploadForm, searchQuery, filterResponsible, filterStatus,
+                    filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, fileInput,
                     
-                    // Methods
-                    getProjectName, getUserName, getUserRole, getUserColor, getInitials, 
-                    getUserInitials, getCurrentUserColor, formatDate,
-                    statusBadge, statusText, navClass, logIcon, logIconClass,
-                    openModal, closeModal, toggleUserMenu,
-                    triggerUpload, handleFile, resetUploadForm, submitUpload,
-                    createNewVersion
+                    getProjectName, getProjectColor, getProjectDocsCount, getProjectBadgeClass,
+                    getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
+                    formatDate, formatTime, statusBadge, statusText, navClass, logIcon, logIconClass,
+                    
+                    selectProject, openModal, closeModal, toggleUserMenu,
+                    triggerUpload, handleFile, resetUploadForm, submitUpload, createNewVersion
                 };
             }
         }).mount('#app');
