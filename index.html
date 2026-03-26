@@ -22,20 +22,19 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
-  width: 300px;
-  transition: width 0.3s ease;
+  width: 320px;
 }
 .sidebar-header { flex: 0 0 auto; }
-.sidebar-nav { flex: 0 0 auto; }
 .sidebar-content {
   flex: 1 1 auto;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  padding: 0.75rem;
+  padding: 1rem;
 }
 .sidebar-footer {
   flex: 0 0 auto;
+  margin-top: auto;
   border-top: 1px solid #1e293b;
   padding: 1rem;
 }
@@ -54,11 +53,10 @@
   background: rgba(255, 255, 255, 0.05);
   color: white;
 }
-.sidebar-collapsed .text-element,
-.sidebar-collapsed .user-details,
-.sidebar-collapsed .project-badge,
-.sidebar-collapsed .nav-text { display: none !important; }
-.sidebar-collapsed { width: 80px !important; }
+.sidebar-collapsed .text-element { display: none !important; }
+.sidebar-collapsed .user-details { display: none !important; }
+.sidebar-collapsed .project-badge { display: none !important; }
+.sidebar-collapsed .action-buttons { display: none !important; }
 .tree-item {
   padding-left: 1.5rem;
   border-left: 2px solid #334155;
@@ -78,11 +76,6 @@
   50% { opacity: 0.5; }
 }
 .validating { animation: validate-pulse 1.5s ease-in-out infinite; }
-.animate-fade-in { animation: fadeIn 0.3s ease; }
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
@@ -110,7 +103,7 @@
   </div>
 
   <!-- NAVIGATION -->
-  <nav class="sidebar-nav p-4 space-y-2">
+  <nav class="sidebar-header p-4 space-y-2">
     <button @click="navigateTo('registry')"
       :class="currentTab === 'registry' ? 'nav-button-active' : 'nav-button-inactive'"
       class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left">
@@ -135,33 +128,17 @@
   <div class="sidebar-content">
     <div class="flex items-center justify-between mb-3">
       <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider text-element">Проекты</span>
-      <button v-if="role === 'contractor'" @click="showCreateProject = !showCreateProject"
+      <button v-if="role === 'contractor'" @click="showCreateProject = true"
         class="w-6 h-6 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition text-element"
         title="Создать проект">
         <i class="fas fa-plus text-[10px]"></i>
       </button>
     </div>
 
-    <!-- CREATE PROJECT FORM (Inline, not popup) -->
-    <div v-if="showCreateProject && role === 'contractor'" class="bg-slate-800 rounded-xl p-3 mb-3 border border-slate-700">
-      <div class="space-y-2">
-        <input v-model="newProject.name" type="text" placeholder="Название проекта" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500">
-        <input v-model="newProject.customerId" type="text" placeholder="ID заказчика" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500">
-        <select v-model="newProject.responsibleId" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white outline-none focus:border-blue-500">
-          <option value="">Ответственный</option>
-          <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
-        </select>
-        <div class="flex gap-2">
-          <button @click="createProject" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold py-2 rounded-lg transition">Создать</button>
-          <button @click="cancelCreateProject" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold py-2 rounded-lg transition">Отмена</button>
-        </div>
-      </div>
-    </div>
-
     <!-- All Projects -->
     <div @click="selectProject('all')"
-      :class="!selectedProject || selectedProject === 'all' ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-3' : 'text-slate-400 hover:text-white hover:bg-slate-800 pl-3'"
-      class="flex items-center gap-3 py-2 rounded-lg cursor-pointer mb-1 transition">
+      :class="!selectedProject || selectedProject === 'all' ? 'bg-blue-600/20 text-white border-l-2 border-blue-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'"
+      class="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer mb-1 transition">
       <i class="fas fa-th-large text-sm shrink-0 w-5"></i>
       <span class="text-element text-sm font-medium flex-1 truncate">Все проекты</span>
       <span class="text-element project-badge text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
@@ -171,8 +148,8 @@
     <div v-for="project in projects" :key="project.id" class="mb-2">
       <div class="group flex items-center gap-2">
         <div @click="selectProject(project.id)"
-          :class="selectedProject === project.id ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-3' : 'text-slate-400 hover:text-white hover:bg-slate-800 pl-3'"
-          class="flex items-center gap-3 py-2 rounded-lg cursor-pointer transition flex-1">
+          :class="selectedProject === project.id ? 'bg-blue-600/20 text-white border-l-2 border-blue-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition flex-1">
           <div class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold shrink-0"
             :style="{ background: project.color + '20', color: project.color }">
             {{ project.icon }}
@@ -183,23 +160,39 @@
             {{ getProjectDocsCount(project.id) }}
           </span>
         </div>
-        <!-- Edit Project Button (Contractor Only) -->
-        <button v-if="role === 'contractor'" @click="openProjectEdit(project)"
-          class="w-7 h-7 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-white transition opacity-0 group-hover:opacity-100 text-element"
-          title="Редактировать проект">
-          <i class="fas fa-pen text-[10px]"></i>
-        </button>
+        <!-- Action Buttons (Contractor Only) -->
+        <div class="action-buttons flex gap-1 opacity-0 group-hover:opacity-100 transition text-element">
+          <button @click="openNewOrderModal(project)" 
+            class="w-7 h-7 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-emerald-400 transition"
+            title="Добавить заказ">
+            <i class="fas fa-folder-plus text-[11px]"></i>
+          </button>
+          <button @click="openEditProjectModal(project)" 
+            class="w-7 h-7 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-400 transition"
+            title="Редактировать">
+            <i class="fas fa-pen text-[10px]"></i>
+          </button>
+        </div>
       </div>
 
       <!-- Orders Tree -->
       <div class="text-element" v-if="!sidebarCollapsed && (selectedProject === project.id || expandedProjects.includes(project.id))">
         <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item mb-1">
-          <div @click="toggleOrderExpand(order.id)"
-            class="flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer text-slate-300 hover:text-white hover:bg-slate-800 text-xs transition">
-            <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
-            <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
-            <span class="truncate flex-1">{{ order.name }}</span>
-            <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
+          <div class="group flex items-center gap-2">
+            <div @click="toggleOrderExpand(order.id)"
+              :class="selectedOrder === order.id ? 'text-white' : 'text-slate-300'"
+              class="flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer hover:text-white hover:bg-slate-800 text-xs transition flex-1">
+              <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
+              <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
+              <span class="truncate flex-1">{{ order.name }}</span>
+              <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
+            </div>
+            <!-- Order Actions -->
+            <button v-if="role === 'contractor'" @click="openQuickUpload(order.id)"
+              class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-emerald-400 transition opacity-0 group-hover:opacity-100"
+              title="Добавить документ">
+              <i class="fas fa-plus text-[9px]"></i>
+            </button>
           </div>
           <!-- Documents under Order -->
           <div v-if="expandedOrders.includes(order.id)" class="ml-4 space-y-1 mt-1">
@@ -210,14 +203,14 @@
               <span class="truncate flex-1">{{ doc.number }}</span>
               <span :class="statusBadgeMini(doc.status)" class="shrink-0 text-[9px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
             </div>
-            <!-- Add Document Button (Contractor Only) -->
-            <button v-if="role === 'contractor'" @click="openQuickUpload(order.id)"
-              class="w-full flex items-center gap-2 px-3 py-1.5 rounded text-slate-500 hover:text-blue-400 hover:bg-slate-800/50 text-[11px] transition border border-dashed border-slate-700 mt-1">
-              <i class="fas fa-plus text-[9px]"></i>
-              <span>Добавить документ</span>
-            </button>
           </div>
         </div>
+        <!-- Add Order Button -->
+        <button v-if="role === 'contractor'" @click="openNewOrderModal(project)"
+          class="w-full flex items-center gap-2 px-3 py-1.5 rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-800/50 text-[11px] transition border border-dashed border-slate-700 mt-1">
+          <i class="fas fa-folder-plus text-[10px]"></i>
+          <span>Добавить заказ</span>
+        </button>
       </div>
     </div>
   </div>
@@ -257,7 +250,7 @@
     <label class="text-element user-details text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
     <select v-model="role" class="text-element user-details w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
       <option value="contractor">👷 Подрядчик</option>
-      <option value="customer">🕵️ Заказчик</option>
+      <option value="client">🕵️ Заказчик</option>
     </select>
   </div>
 </aside>
@@ -373,8 +366,8 @@
       </div>
     </section>
 
-    <!-- UPLOAD TAB (Contractor Only) -->
-    <section v-else-if="currentTab === 'upload' && role === 'contractor'" class="max-w-2xl mx-auto animate-fade-in">
+    <!-- UPLOAD TAB -->
+    <section v-else-if="currentTab === 'upload' && role === 'contractor'" class="max-w-2xl mx-auto">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <h3 class="text-lg font-bold text-slate-800 mb-4">Загрузка документа</h3>
         <div class="space-y-4">
@@ -417,17 +410,8 @@
       </div>
     </section>
 
-    <!-- UPLOAD TAB (Customer - View Only Message) -->
-    <section v-else-if="currentTab === 'upload' && role === 'customer'" class="max-w-2xl mx-auto animate-fade-in">
-      <div class="bg-amber-50 rounded-2xl shadow-sm border border-amber-200 p-8 text-center">
-        <i class="fas fa-lock text-4xl text-amber-400 mb-4"></i>
-        <h3 class="text-lg font-bold text-amber-800 mb-2">Доступ ограничен</h3>
-        <p class="text-sm text-amber-600">У роли «Заказчик» нет прав на загрузку документов. Только просмотр.</p>
-      </div>
-    </section>
-
     <!-- AUDIT LOG -->
-    <section v-else-if="currentTab === 'audit'" class="max-w-3xl mx-auto animate-fade-in">
+    <section v-else-if="currentTab === 'audit'" class="max-w-3xl mx-auto">
       <div class="space-y-3">
         <div v-for="log in filteredAuditLogs" :key="log.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-4">
           <div :class="logIconClass(log.type)" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
@@ -443,14 +427,49 @@
   </div>
 </main>
 
-<!-- ========== MODAL: PROJECT EDIT ========== -->
+<!-- ========== MODAL: CREATE PROJECT ========== -->
 <transition name="modal">
-<div v-if="showProjectEdit" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeProjectEdit">
+<div v-if="showCreateProject" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="showCreateProject = false">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-  <div class="modal-card relative bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
     <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
-      <h3 class="text-lg font-black text-slate-800">Редактирование проекта</h3>
-      <button @click="closeProjectEdit" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
+      <h3 class="text-lg font-black text-slate-800">Создать проект</h3>
+      <button @click="showCreateProject = false" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Название проекта</label>
+        <input v-model="newProject.name" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: ЖК Артвелл Парк">
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">ID заказчика</label>
+        <input v-model="newProject.customerId" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: CUST-001">
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Ответственный</label>
+        <select v-model="newProject.responsibleId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500">
+          <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
+        </select>
+      </div>
+    </div>
+    <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
+      <button @click="showCreateProject = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
+      <button @click="createProject" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition">Создать</button>
+    </div>
+  </div>
+</div>
+</transition>
+
+<!-- ========== MODAL: EDIT PROJECT ========== -->
+<transition name="modal">
+<div v-if="showEditProject" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="showEditProject = false">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+      <h3 class="text-lg font-black text-slate-800">Редактировать проект</h3>
+      <button @click="showEditProject = false" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
         <i class="fas fa-times text-lg"></i>
       </button>
     </div>
@@ -469,19 +488,80 @@
           <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
         </select>
       </div>
-      <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-lg" :style="{ background: editProject.color + '20', color: editProject.color }">
-          {{ editProject.icon }}
-        </div>
-        <div>
-          <p class="text-xs font-bold text-slate-700">Цвет и иконка</p>
-          <p class="text-[10px] text-slate-400">Генерируются автоматически</p>
+    </div>
+    <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
+      <button @click="showEditProject = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
+      <button @click="saveEditProject" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition">Сохранить</button>
+    </div>
+  </div>
+</div>
+</transition>
+
+<!-- ========== MODAL: CREATE ORDER ========== -->
+<transition name="modal">
+<div v-if="showNewOrder" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="showNewOrder = false">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+      <h3 class="text-lg font-black text-slate-800">Создать заказ</h3>
+      <button @click="showNewOrder = false" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Проект</label>
+        <input type="text" :value="getProjectName(newOrder.projectId)" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-500" readonly>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Название заказа</label>
+        <input v-model="newOrder.name" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: Заказ №2026-003">
+      </div>
+    </div>
+    <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
+      <button @click="showNewOrder = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
+      <button @click="createOrder" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold transition">Создать</button>
+    </div>
+  </div>
+</div>
+</transition>
+
+<!-- ========== MODAL: QUICK UPLOAD ========== -->
+<transition name="modal">
+<div v-if="showQuickUpload" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeQuickUpload">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+      <h3 class="text-lg font-black text-slate-800">Быстрая загрузка</h3>
+      <button @click="closeQuickUpload" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Заказ</label>
+        <input type="text" :value="getOrderName(quickUpload.orderId)" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-500" readonly>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Название документа</label>
+        <input v-model="quickUpload.number" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: АКТ-001">
+      </div>
+      <div @click="triggerQuickUpload" class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-6 text-center hover:border-blue-400 cursor-pointer transition">
+        <input ref="quickFileInput" type="file" @change="handleQuickFile" class="hidden" accept=".xml,.pdf,.doc,.docx">
+        <i class="fas fa-cloud-upload-alt text-2xl text-blue-500 mb-2"></i>
+        <p class="text-sm font-bold">Выберите файл</p>
+        <p class="text-xs text-slate-400">XML, PDF, DOCX</p>
+        <div v-if="quickUpload.fileName" class="mt-3 p-2 bg-white rounded-lg border flex items-center gap-2">
+          <i class="fas fa-file text-blue-500 text-xs"></i>
+          <span class="text-xs font-medium flex-1 truncate">{{ quickUpload.fileName }}</span>
         </div>
       </div>
     </div>
     <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
-      <button @click="closeProjectEdit" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
-      <button @click="saveProjectEdit" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition">Сохранить</button>
+      <button @click="closeQuickUpload" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
+      <button @click="submitQuickUpload" :disabled="!canQuickUpload" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold disabled:opacity-50 transition">
+        Загрузить
+      </button>
     </div>
   </div>
 </div>
@@ -570,21 +650,21 @@
         </div>
       </div>
 
-      <!-- EDITOR TAB (Contractor Only) -->
+      <!-- EDITOR TAB -->
       <div v-if="modalTab === 'editor' && selectedDoc.fileType === 'xml'" class="space-y-4">
         <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
             <span class="text-[11px] text-slate-300">{{ selectedDoc.number }}.xml</span>
             <div class="flex gap-2">
-              <button v-if="role === 'contractor'" @click="formatXML" class="text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition">
+              <button @click="formatXML" class="text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition">
                 <i class="fas fa-indent mr-1"></i>Форматировать
               </button>
-              <button v-if="role === 'contractor'" @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">
+              <button @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">
                 <i class="fas fa-save mr-1"></i>Сохранить
               </button>
             </div>
           </div>
-          <textarea v-model="xmlEditorContent" class="code-editor w-full h-80 bg-slate-900 text-slate-100 p-4 outline-none resize-none" spellcheck="false" :readonly="role === 'customer'"></textarea>
+          <textarea v-model="xmlEditorContent" class="code-editor w-full h-80 bg-slate-900 text-slate-100 p-4 outline-none resize-none" spellcheck="false"></textarea>
         </div>
         <div v-if="selectedDoc.status === 'invalid'" class="bg-rose-50 rounded-xl p-4 border border-rose-200">
           <h4 class="text-sm font-bold text-rose-700 mb-3"><i class="fas fa-triangle-exclamation mr-2"></i>Ошибки в XML:</h4>
@@ -644,47 +724,6 @@
 </div>
 </transition>
 
-<!-- ========== QUICK UPLOAD MODAL ========== -->
-<transition name="modal">
-<div v-if="showQuickUpload" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeQuickUpload">
-  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
-      <h3 class="text-lg font-black text-slate-800">Быстрая загрузка</h3>
-      <button @click="closeQuickUpload" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
-        <i class="fas fa-times text-lg"></i>
-      </button>
-    </div>
-    <div class="p-5 space-y-4">
-      <div>
-        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Заказ</label>
-        <input type="text" :value="getOrderName(quickUpload.orderId)" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-500" readonly>
-      </div>
-      <div>
-        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Название документа</label>
-        <input v-model="quickUpload.number" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: АКТ-001">
-      </div>
-      <div @click="triggerQuickUpload" class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-6 text-center hover:border-blue-400 cursor-pointer transition">
-        <input ref="quickFileInput" type="file" @change="handleQuickFile" class="hidden" accept=".xml,.pdf,.doc,.docx">
-        <i class="fas fa-cloud-upload-alt text-2xl text-blue-500 mb-2"></i>
-        <p class="text-sm font-bold">Выберите файл</p>
-        <p class="text-xs text-slate-400">XML, PDF, DOCX</p>
-        <div v-if="quickUpload.fileName" class="mt-3 p-2 bg-white rounded-lg border flex items-center gap-2">
-          <i class="fas fa-file text-blue-500 text-xs"></i>
-          <span class="text-xs font-medium flex-1 truncate">{{ quickUpload.fileName }}</span>
-        </div>
-      </div>
-    </div>
-    <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
-      <button @click="closeQuickUpload" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
-      <button @click="submitQuickUpload" :disabled="!canQuickUpload" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold disabled:opacity-50 transition">
-        Загрузить
-      </button>
-    </div>
-  </div>
-</div>
-</transition>
-
 </div>
 
 <script>
@@ -700,6 +739,7 @@ setup() {
   const showUserMenu = ref(false);
   const uploading = ref(false);
   const selectedProject = ref('all');
+  const selectedOrder = ref(null);
   const expandedProjects = ref([]);
   const expandedOrders = ref([]);
   const sidebarCollapsed = ref(false);
@@ -709,7 +749,8 @@ setup() {
   const loading = ref(false);
   const error = ref(null);
   const showCreateProject = ref(false);
-  const showProjectEdit = ref(false);
+  const showEditProject = ref(false);
+  const showNewOrder = ref(false);
   const showQuickUpload = ref(false);
 
   // Data
@@ -746,8 +787,9 @@ setup() {
   ]);
 
   const currentUser = ref(employees.value[0]);
-  const newProject = ref({ name: '', customerId: '', responsibleId: '' });
-  const editProject = ref({ id: '', name: '', customerId: '', responsibleId: '', color: '', icon: '' });
+  const newProject = ref({ name: '', customerId: '', responsibleId: 'anna' });
+  const editProject = ref({ id: '', name: '', customerId: '', responsibleId: '' });
+  const newOrder = ref({ projectId: '', name: '' });
   const uploadForm = ref({ projectId: 'park-2', orderId: 'order-1', responsibleId: 'anna', comment: '', fileName: '', fileType: '' });
   const quickUpload = ref({ orderId: '', number: '', fileName: '', fileType: '' });
   const validationChecks = ref([]);
@@ -784,8 +826,6 @@ setup() {
   const statusBadgeMini = (s) => ({ valid: "bg-emerald-100 text-emerald-700", invalid: "bg-rose-100 text-rose-700", processing: "bg-amber-100 text-amber-700" }[s] || '');
   const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка', processing: 'Анализ...' }[s]);
   const statusTextMini = (s) => ({ valid: '✓', invalid: '✕', processing: '...' }[s]);
-  const logIcon = (type) => ({ upload: 'fas fa-cloud-upload-alt text-blue-600', error: 'fas fa-triangle-exclamation text-rose-600', validation: 'fas fa-check-circle text-emerald-600' }[type] || 'fas fa-info-circle text-slate-600');
-  const logIconClass = (type) => ({ upload: 'bg-blue-100', error: 'bg-rose-100', validation: 'bg-emerald-100' }[type] || 'bg-slate-100');
 
   // Computed
   const currentTabName = computed(() => ({ registry: 'Реестр документации', upload: 'Загрузка файлов', audit: 'Аудит-лог' }[currentTab.value]));
@@ -820,15 +860,10 @@ setup() {
   const toggleSidebar = () => { if (isMobile.value) sidebarOpen.value = !sidebarOpen.value; };
   const toggleSidebarCollapse = () => { if (!isMobile.value) sidebarCollapsed.value = !sidebarCollapsed.value; };
   const navigateTo = (tab) => { currentTab.value = tab; if (isMobile.value) sidebarOpen.value = false; };
-  const selectProject = (id) => { selectedProject.value = id; };
+  const selectProject = (id) => { selectedProject.value = id; selectedOrder.value = null; };
   const onProjectChange = () => { const o = getOrdersByProject(uploadForm.value.projectId); if (o.length) uploadForm.value.orderId = o[0].id; };
   const toggleOrderExpand = (id) => { const i = expandedOrders.value.indexOf(id); i === -1 ? expandedOrders.value.push(id) : expandedOrders.value.splice(i, 1); };
   const toggleUserMenu = () => { showUserMenu.value = !showUserMenu.value; };
-
-  const cancelCreateProject = () => {
-    showCreateProject.value = false;
-    newProject.value = { name: '', customerId: '', responsibleId: '' };
-  };
 
   const createProject = () => {
     if (!newProject.value.name) { alert('Введите название проекта'); return; }
@@ -838,29 +873,44 @@ setup() {
       id: 'proj-' + Date.now(),
       name: newProject.value.name,
       customerId: newProject.value.customerId || '—',
-      responsibleId: newProject.value.responsibleId || employees.value[0].id,
+      responsibleId: newProject.value.responsibleId,
       color: colors[Math.floor(Math.random() * colors.length)],
       icon: icons[Math.floor(Math.random() * icons.length)]
     });
-    cancelCreateProject();
+    newProject.value = { name: '', customerId: '', responsibleId: 'anna' };
+    showCreateProject.value = false;
   };
 
-  const openProjectEdit = (project) => {
+  const openEditProjectModal = (project) => {
     editProject.value = { ...project };
-    showProjectEdit.value = true;
+    showEditProject.value = true;
   };
 
-  const closeProjectEdit = () => {
-    showProjectEdit.value = false;
-    editProject.value = { id: '', name: '', customerId: '', responsibleId: '', color: '', icon: '' };
-  };
-
-  const saveProjectEdit = () => {
+  const saveEditProject = () => {
     const idx = projects.value.findIndex(p => p.id === editProject.value.id);
     if (idx !== -1) {
       projects.value[idx] = { ...projects.value[idx], name: editProject.value.name, customerId: editProject.value.customerId, responsibleId: editProject.value.responsibleId };
     }
-    closeProjectEdit();
+    showEditProject.value = false;
+  };
+
+  const openNewOrderModal = (project) => {
+    newOrder.value = { projectId: project.id, name: '' };
+    showNewOrder.value = true;
+  };
+
+  const createOrder = () => {
+    if (!newOrder.value.name) { alert('Введите название заказа'); return; }
+    orders.value.push({
+      id: 'order-' + Date.now(),
+      name: newOrder.value.name,
+      projectId: newOrder.value.projectId
+    });
+    if (!expandedProjects.value.includes(newOrder.value.projectId)) {
+      expandedProjects.value.push(newOrder.value.projectId);
+    }
+    newOrder.value = { projectId: '', name: '' };
+    showNewOrder.value = false;
   };
 
   const openQuickUpload = (orderId) => {
@@ -889,13 +939,14 @@ setup() {
 
   const submitQuickUpload = () => {
     if (!canQuickUpload.value) return;
+    const order = orders.value.find(o => o.id === quickUpload.value.orderId);
     documents.value.unshift({
       id: Date.now(),
       number: quickUpload.value.number,
       status: 'valid',
       version: 1,
       updatedAt: new Date().toISOString(),
-      projectId: projects.value.find(p => getOrdersByProject(p.id).some(o => o.id === quickUpload.value.orderId))?.id || 'park-2',
+      projectId: order?.projectId || 'park-2',
       orderId: quickUpload.value.orderId,
       responsibleId: currentUser.value.id,
       fileType: quickUpload.value.fileType,
@@ -905,7 +956,7 @@ setup() {
       id: Date.now(),
       type: 'upload',
       userId: currentUser.value.id,
-      projectId: projects.value.find(p => getOrdersByProject(p.id).some(o => o.id === quickUpload.value.orderId))?.id || 'park-2',
+      projectId: order?.projectId || 'park-2',
       message: `Загружен: ${quickUpload.value.number}`,
       time: new Date().toISOString(),
       userName: currentUser.value.name
@@ -951,10 +1002,7 @@ setup() {
     uploadForm.value.fileType = {xml:'xml', pdf:'pdf', doc:'doc', docx:'doc'}[ext] || 'other';
   };
 
-  const resetUploadForm = () => {
-    uploadForm.value = { projectId: selectedProject.value !== 'all' ? selectedProject.value : 'park-2', orderId: 'order-1', responsibleId: currentUser.value.id, comment: '', fileName: '', fileType: '' };
-    if (fileInput.value) fileInput.value.value = '';
-  };
+  const resetUploadForm = () => { uploadForm.value = { projectId: selectedProject.value !== 'all' ? selectedProject.value : 'park-2', orderId: 'order-1', responsibleId: currentUser.value.id, comment: '', fileName: '', fileType: '' }; if (fileInput.value) fileInput.value.value = ''; };
 
   const submitUpload = async () => {
     if (!canUpload.value) return;
@@ -989,15 +1037,16 @@ setup() {
   const refreshData = () => { loading.value = true; error.value = null; setTimeout(() => loading.value = false, 1000); };
   const openNewVersionModal = (doc) => { alert('Создание новой версии: ' + doc.number); };
 
-  const handleResize = () => {
-    isMobile.value = window.innerWidth < 768;
-    if (!isMobile.value) sidebarCollapsed.value = false;
-  };
+  const handleResize = () => { isMobile.value = window.innerWidth < 768; if (!isMobile.value) sidebarCollapsed.value = false; };
 
   const handleKeydown = (e) => {
-    if (e.key === 'Escape' && selectedDoc.value) closeModal();
-    if (e.key === 'Escape' && showProjectEdit.value) closeProjectEdit();
-    if (e.key === 'Escape' && showQuickUpload.value) closeQuickUpload();
+    if (e.key === 'Escape') {
+      if (selectedDoc.value) closeModal();
+      if (showCreateProject.value) showCreateProject.value = false;
+      if (showEditProject.value) showEditProject.value = false;
+      if (showNewOrder.value) showNewOrder.value = false;
+      if (showQuickUpload.value) closeQuickUpload();
+    }
   };
 
   onMounted(() => {
@@ -1012,14 +1061,14 @@ setup() {
 
   return {
     role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
-    selectedProject, expandedProjects, expandedOrders, sidebarCollapsed, isMobile, sidebarOpen,
-    apiConnected, loading, error, showCreateProject, showProjectEdit, showQuickUpload,
+    selectedProject, selectedOrder, expandedProjects, expandedOrders, sidebarCollapsed, isMobile, sidebarOpen,
+    apiConnected, loading, error, showCreateProject, showEditProject, showNewOrder, showQuickUpload,
     projects, orders, employees, currentUser, documents, auditLogs,
-    newProject, editProject, uploadForm, quickUpload, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
+    newProject, editProject, newOrder, uploadForm, quickUpload, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
     filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, canQuickUpload,
     fileInput, quickFileInput, xmlEditorContent, sidebarClasses,
     toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, onProjectChange, toggleOrderExpand,
-    toggleUserMenu, cancelCreateProject, createProject, openProjectEdit, closeProjectEdit, saveProjectEdit,
+    toggleUserMenu, createProject, openEditProjectModal, saveEditProject, openNewOrderModal, createOrder,
     openQuickUpload, closeQuickUpload, triggerQuickUpload, handleQuickFile, submitQuickUpload,
     downloadFile, downloadVersion, runValidationChecks, formatXML, saveXMLEdit,
     triggerUpload, handleFile, resetUploadForm, submitUpload,
@@ -1028,8 +1077,7 @@ setup() {
     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
     getProjectDocsCount,
     getFileIcon, getFileIconColor, getFileIconClass, getFileTypeName,
-    formatDate, formatTime, statusBadge, statusBadgeMini, statusText, statusTextMini,
-    logIcon, logIconClass
+    formatDate, formatTime, statusBadge, statusBadgeMini, statusText, statusTextMini
   };
 }
 }).mount('#app');
