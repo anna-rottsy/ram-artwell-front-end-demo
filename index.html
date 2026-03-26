@@ -36,7 +36,39 @@
         .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         
+        /* FIXED SIDEBAR LAYOUT */
+        .sidebar-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
         .sidebar-transition { transition: width 0.3s ease; }
+        
+        /* Blue stripe when collapsed */
+        .collapsed-stripe {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+            pointer-events: none;
+        }
         
         /* Tree view */
         .tree-item { padding-left: 1.25rem; border-left: 2px solid #e2e8f0; margin-left: 0.5rem; }
@@ -55,32 +87,31 @@
         
         .no-hover:hover { background: transparent !important; cursor: default !important; }
         
-        /* Loading skeleton */
-        .skeleton {
-            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
+        /* Validation animation */
+        @keyframes validate-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        .validating { animation: validate-pulse 1.5s ease-in-out infinite; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
     <div id="app" v-cloak class="min-h-screen flex">
         
         <!-- SIDEBAR -->
-        <aside :class="sidebarClasses" class="bg-slate-900 text-white flex flex-col shadow-xl z-40 fixed md:relative h-full sidebar-transition overflow-hidden">
+        <aside :class="sidebarClasses" class="bg-slate-900 text-white shadow-xl z-40 fixed md:relative sidebar-wrapper">
+            <!-- Blue stripe when collapsed -->
+            <div v-if="sidebarCollapsed && !isMobile" class="collapsed-stripe"></div>
             
             <!-- Mobile Overlay -->
             <div v-if="sidebarOpen && isMobile" @click="toggleSidebar" 
                  class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
             
             <!-- Sidebar Content -->
-            <div class="flex-1 flex flex-col" :class="sidebarCollapsed && !isMobile ? 'min-w-[80px] max-w-[80px]' : 'min-w-[288px] max-w-[288px]'">
+            <div class="sidebar-content" :class="sidebarCollapsed && !isMobile ? 'min-w-[80px] max-w-[80px]' : 'min-w-[288px] max-w-[288px]'">
+                
                 <!-- Header -->
-                <div class="p-5 border-b border-slate-800">
+                <div class="p-5 border-b border-slate-800 shrink-0">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3" :class="{ 'justify-center': sidebarCollapsed && !isMobile }">
                             <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20 shrink-0">
@@ -88,7 +119,6 @@
                             </div>
                             <span v-if="!sidebarCollapsed || isMobile" class="font-bold text-lg tracking-tight whitespace-nowrap">ARTWELL <span class="text-blue-400">XML</span></span>
                         </div>
-                        <!-- Desktop Collapse Button - FIXED POSITIONING -->
                         <button v-if="!isMobile" @click="toggleSidebarCollapse" 
                                 class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-800 transition text-slate-400 shrink-0 ml-auto" 
                                 :title="sidebarCollapsed ? 'Развернуть меню' : 'Свернуть меню'">
@@ -99,26 +129,26 @@
                 </div>
                 
                 <!-- Main Navigation -->
-                <nav class="p-4 space-y-1" v-if="!sidebarCollapsed || isMobile">
+                <nav class="p-4 space-y-1 shrink-0" v-if="!sidebarCollapsed || isMobile">
                     <button @click="navigateTo('registry')" :class="navClass('registry')" class="w-full">
                         <i class="fas fa-list-ul w-5 shrink-0"></i> 
-                        <span class="ml-3 whitespace-nowrap">Реестр документов</span>
+                        <span v-if="!sidebarCollapsed" class="ml-3 whitespace-nowrap">Реестр документов</span>
                     </button>
                     <button @click="navigateTo('upload')" v-if="role === 'contractor'" :class="navClass('upload')" class="w-full">
                         <i class="fas fa-cloud-upload-alt w-5 shrink-0"></i> 
-                        <span class="ml-3 whitespace-nowrap">Загрузка файлов</span>
+                        <span v-if="!sidebarCollapsed" class="ml-3 whitespace-nowrap">Загрузка файлов</span>
                     </button>
                     <button @click="navigateTo('audit')" :class="navClass('audit')" class="w-full">
                         <i class="fas fa-history w-5 shrink-0"></i> 
-                        <span class="ml-3 whitespace-nowrap">Аудит-лог</span>
+                        <span v-if="!sidebarCollapsed" class="ml-3 whitespace-nowrap">Аудит-лог</span>
                     </button>
                 </nav>
 
-                <!-- Projects Section -->
-                <div class="px-4 mt-2 flex-1 overflow-y-auto" v-if="!sidebarCollapsed || isMobile">
-                    <div class="flex items-center justify-between mb-3 px-1">
+                <!-- Projects Section (Scrollable) -->
+                <div class="sidebar-nav px-4 mt-2" v-if="!sidebarCollapsed || isMobile">
+                    <div class="flex items-center justify-between mb-3 px-1 shrink-0">
                         <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider whitespace-nowrap">Проекты</span>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 shrink-0">
                             <button v-if="selectedProject && selectedProject !== 'all'"
                                     @click="selectProject('all')"
                                     class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition whitespace-nowrap">
@@ -135,7 +165,7 @@
                     
                     <!-- All Projects -->
                     <div @click="selectProject('all')" 
-                         class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                         class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 shrink-0"
                          :class="!selectedProject || selectedProject === 'all' 
                             ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
                             : 'text-slate-400 hover:text-white hover:bg-slate-800'">
@@ -146,10 +176,10 @@
                         <span v-if="!sidebarCollapsed" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
                     </div>
                     
-                    <!-- Project List with Hierarchy -->
+                    <!-- Project List -->
                     <div v-for="project in projects" :key="project.id" class="mb-2">
                         <div @click="selectProject(project.id)"
-                             class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                             class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 shrink-0"
                              :class="selectedProject === project.id 
                                 ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
                                 : 'text-slate-400 hover:text-white hover:bg-slate-800'">
@@ -175,7 +205,7 @@
                                     <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
                                     <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
                                     <span class="truncate flex-1">{{ order.name }}</span>
-                                    <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ order.docsCount }}</span>
+                                    <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
                                 </div>
                                 
                                 <!-- Documents under Order -->
@@ -193,8 +223,8 @@
                     </div>
                 </div>
 
-                <!-- Bottom: User & Settings -->
-                <div class="p-4 border-t border-slate-800 bg-slate-950/30" v-if="!sidebarCollapsed || isMobile">
+                <!-- Bottom: User & Settings (Always at bottom) -->
+                <div class="p-4 border-t border-slate-800 bg-slate-950/30 shrink-0 mt-auto" v-if="!sidebarCollapsed || isMobile">
                     <div class="flex items-center gap-3 mb-3">
                         <div class="relative shrink-0">
                             <button @click="toggleUserMenu" 
@@ -241,14 +271,12 @@
             <!-- Top Nav -->
             <header class="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm shrink-0">
                 <div class="flex items-center gap-3">
-                    <!-- Mobile Menu Toggle -->
                     <button @click="toggleSidebar" class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition">
                         <i class="fas fa-bars text-slate-600"></i>
                     </button>
                     
                     <h2 class="text-base font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
                     
-                    <!-- Active Project/Order Indicator -->
                     <template v-if="selectedProject && selectedProject !== 'all'">
                         <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                             <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getProjectColor(selectedProject) }"></span>
@@ -261,21 +289,18 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <!-- Search -->
                     <div v-if="currentTab === 'registry'" class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
                         <input type="text" v-model="searchQuery" placeholder="Поиск..." 
                                class="w-36 sm:w-48 pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
                     </div>
                     
-                    <!-- Connection Status (for future backend) -->
                     <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-medium"
                          :class="apiConnected ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-amber-50 text-amber-600 border border-amber-200'">
                         <span class="w-1.5 h-1.5 rounded-full" :class="apiConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
                         {{ apiConnected ? 'API подключено' : 'Локальный режим' }}
                     </div>
                     
-                    <!-- Mobile User Avatar -->
                     <button @click="toggleUserMenu" class="sm:hidden w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white shrink-0" 
                             :style="{ backgroundColor: currentUser.color }">
                         {{ getInitials(currentUser) }}
@@ -457,7 +482,6 @@
                             </div>
                         </div>
                         
-                        <!-- Drop Zone -->
                         <div @click="triggerUpload" 
                              class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition cursor-pointer group">
                             <input type="file" ref="fileInput" @change="handleFile" class="hidden" :accept="uploadForm.xmlOnly ? '.xml' : '.xml,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg'">
@@ -525,7 +549,6 @@
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
                 
                 <div class="modal-card relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-                    <!-- Header -->
                     <div class="p-4 bg-slate-50 border-b flex justify-between items-start shrink-0">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="getFileIconClass(selectedDoc.fileType)">
@@ -543,7 +566,6 @@
                         </button>
                     </div>
                     
-                    <!-- Tabs -->
                     <div class="border-b border-slate-200 bg-slate-50/50 shrink-0">
                         <div class="flex px-4">
                             <button @click="modalTab = 'preview'" 
@@ -551,10 +573,10 @@
                                     class="px-4 py-3 text-sm font-medium transition whitespace-nowrap">
                                 <i class="fas fa-eye mr-2"></i>Предпросмотр
                             </button>
-                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'editor'" 
-                                    :class="modalTab === 'editor' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
+                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'validation'" 
+                                    :class="modalTab === 'validation' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
                                     class="px-4 py-3 text-sm font-medium transition whitespace-nowrap">
-                                <i class="fas fa-code mr-2"></i>Редактор
+                                <i class="fas fa-check-circle mr-2"></i>Валидация
                             </button>
                             <button @click="modalTab = 'versions'" 
                                     :class="modalTab === 'versions' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
@@ -564,7 +586,6 @@
                         </div>
                     </div>
                     
-                    <!-- Content -->
                     <div class="p-5 overflow-y-auto flex-1">
                         
                         <!-- PREVIEW TAB -->
@@ -625,25 +646,40 @@
                             </div>
                         </div>
                         
-                        <!-- EDITOR TAB -->
-                        <div v-if="modalTab === 'editor' && selectedDoc.fileType === 'xml'" class="h-full">
-                            <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
-                                <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-                                    <span class="text-[11px] text-slate-300">{{ selectedDoc.number }}.xml</span>
-                                    <div class="flex items-center gap-2">
-                                        <button @click="formatXML" class="text-[10px] text-slate-400 hover:text-white transition px-2 py-1 rounded hover:bg-slate-700">
-                                            <i class="fas fa-indent mr-1"></i>Форматировать
-                                        </button>
-                                        <button @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">
-                                            <i class="fas fa-save mr-1"></i>Сохранить
-                                        </button>
+                        <!-- VALIDATION TAB (NEW) -->
+                        <div v-if="modalTab === 'validation' && selectedDoc.fileType === 'xml'" class="space-y-4">
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                <h4 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-shield-alt text-blue-600"></i>
+                                    Проверка соответствия XSD схемам
+                                </h4>
+                                
+                                <div class="space-y-3">
+                                    <div v-for="(check, idx) in validationChecks" :key="idx" 
+                                         class="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-200">
+                                        <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                                             :class="check.status === 'valid' ? 'bg-emerald-100 text-emerald-600' : 
+                                                     check.status === 'invalid' ? 'bg-rose-100 text-rose-600' : 
+                                                     'bg-amber-100 text-amber-600 validating'">
+                                            <i :class="check.status === 'valid' ? 'fas fa-check text-xs' : 
+                                                       check.status === 'invalid' ? 'fas fa-times text-xs' : 
+                                                       'fas fa-spinner fa-spin text-xs'"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p class="text-xs font-bold text-slate-700">{{ check.name }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">{{ check.message }}</p>
+                                            <p v-if="check.details" class="text-[10px] text-slate-400 mt-1 font-mono">{{ check.details }}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <textarea v-model="xmlEditorContent" 
-                                          class="code-editor w-full h-64 sm:h-80 bg-slate-900 text-slate-100 p-4 outline-none resize-none"
-                                          spellcheck="false"></textarea>
                             </div>
-                            <p class="text-[10px] text-slate-400 mt-2">⚠️ Изменения сохраняются локально. Для применения требуется повторная валидация.</p>
+                            
+                            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                                <p class="text-xs text-blue-800">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    <strong>XML Schema Definition (XSD)</strong> — стандарт Минстроя России для исполнительной документации
+                                </p>
+                            </div>
                         </div>
                         
                         <!-- VERSIONS TAB -->
@@ -802,22 +838,6 @@
 
         createApp({
             setup() {
-                // === API CONFIGURATION (для Java backend) ===
-                const API_CONFIG = {
-                    baseUrl: 'http://localhost:8080/api', // Java Spring Boot default port
-                    endpoints: {
-                        projects: '/projects',
-                        orders: '/orders',
-                        documents: '/documents',
-                        employees: '/employees',
-                        auditLogs: '/audit-logs',
-                        validation: '/validation',
-                        upload: '/upload'
-                    },
-                    wsUrl: 'ws://localhost:8080/ws' // WebSocket для real-time обновлений
-                };
-
-                // === STATE ===
                 const role = ref('contractor');
                 const currentTab = ref('registry');
                 const modalTab = ref('preview');
@@ -830,20 +850,16 @@
                 const showNewVersionModal = ref(false);
                 const uploadingNewVersion = ref(false);
                 
-                // UI State
                 const sidebarOpen = ref(false);
                 const sidebarCollapsed = ref(false);
                 const isMobile = ref(window.innerWidth < 768);
                 const expandedProjects = ref([]);
                 const expandedOrders = ref([]);
                 
-                // API State
                 const apiConnected = ref(false);
                 const loading = ref(false);
                 const error = ref(null);
-                let wsConnection = null;
-
-                // === DATA (mock initially, will be replaced with API calls) ===
+                
                 const projects = ref([]);
                 const orders = ref([]);
                 const employees = ref([]);
@@ -852,7 +868,6 @@
                 
                 const currentUser = ref({ id: 'anna', name: 'Анна Р.', role: 'Подрядчик', color: '#3b82f6' });
                 
-                // === Upload Form ===
                 const uploadForm = ref({
                     projectId: '',
                     orderId: '',
@@ -875,6 +890,9 @@
 
                 const newProjectForm = ref({ name: '', color: '#3b82f6', icon: '🏢' });
                 
+                // Validation checks for XML
+                const validationChecks = ref([]);
+                
                 const projectColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
                 const projectIcons = ['🏢', '🏗️', '🏬', '🏭', '🛣️', '🌉', '🏡', '🏨'];
                 
@@ -887,112 +905,16 @@
                 const newVersionFileInput = ref(null);
                 const xmlEditorContent = ref('');
 
-                // === API SERVICE LAYER (для подключения к Java backend) ===
-                const apiService = {
-                    async fetch(endpoint, options = {}) {
-                        const url = `${API_CONFIG.baseUrl}${endpoint}`;
-                        const token = localStorage.getItem('authToken');
-                        
-                        const config = {
-                            ...options,
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...(token && { 'Authorization': `Bearer ${token}` }),
-                                ...options.headers
-                            }
-                        };
-                        
-                        try {
-                            const response = await fetch(url, config);
-                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                            return await response.json();
-                        } catch (err) {
-                            console.error('API Error:', err);
-                            throw err;
-                        }
-                    },
-                    
-                    // Projects
-                    async getProjects() { return this.fetch(API_CONFIG.endpoints.projects); },
-                    async createProject(data) { return this.fetch(API_CONFIG.endpoints.projects, { method: 'POST', body: JSON.stringify(data) }); },
-                    
-                    // Orders
-                    async getOrders(projectId) { return this.fetch(`${API_CONFIG.endpoints.orders}?projectId=${projectId}`); },
-                    
-                    // Documents
-                    async getDocuments(params) { 
-                        const query = new URLSearchParams(params).toString();
-                        return this.fetch(`${API_CONFIG.endpoints.documents}?${query}`); 
-                    },
-                    async uploadDocument(formData) { 
-                        return this.fetch(API_CONFIG.endpoints.upload, { method: 'POST', body: formData }); 
-                    },
-                    async getDocumentVersions(docId) { return this.fetch(`${API_CONFIG.endpoints.documents}/${docId}/versions`); },
-                    
-                    // Audit Logs
-                    async getAuditLogs(params) { 
-                        const query = new URLSearchParams(params).toString();
-                        return this.fetch(`${API_CONFIG.endpoints.auditLogs}?${query}`); 
-                    },
-                    
-                    // Employees
-                    async getEmployees() { return this.fetch(API_CONFIG.endpoints.employees); },
-                    
-                    // Validation
-                    async validateDocument(file) { 
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        return this.fetch(API_CONFIG.endpoints.validation, { method: 'POST', body: formData }); 
-                    }
+                // FIXED COUNTER: Correct document counting
+                const getDocsCountForOrder = (orderId) => {
+                    return documents.value.filter(d => d.orderId === orderId).length;
                 };
 
-                // WebSocket для real-time обновлений
-                const initWebSocket = () => {
-                    if ('WebSocket' in window) {
-                        wsConnection = new WebSocket(API_CONFIG.wsUrl);
-                        
-                        wsConnection.onopen = () => {
-                            console.log('WebSocket connected');
-                            apiConnected.value = true;
-                        };
-                        
-                        wsConnection.onmessage = (event) => {
-                            const data = JSON.parse(event.data);
-                            // Handle real-time updates
-                            if (data.type === 'document_updated') {
-                                refreshData();
-                            }
-                        };
-                        
-                        wsConnection.onclose = () => {
-                            console.log('WebSocket disconnected');
-                            apiConnected.value = false;
-                            // Attempt reconnect after 5 seconds
-                            setTimeout(initWebSocket, 5000);
-                        };
-                        
-                        wsConnection.onerror = (err) => {
-                            console.error('WebSocket error:', err);
-                            apiConnected.value = false;
-                        };
-                    }
-                };
-
-                // === LOAD DATA ===
                 const loadData = async () => {
                     loading.value = true;
                     error.value = null;
                     
                     try {
-                        // В продакшене раскомментировать:
-                        // const [projectsData, employeesData] = await Promise.all([
-                        //     apiService.getProjects(),
-                        //     apiService.getEmployees()
-                        // ]);
-                        // projects.value = projectsData;
-                        // employees.value = employeesData;
-                        
-                        // Mock data для демонстрации (удалить при подключении backend)
                         projects.value = [
                             { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2', color: '#3b82f6', icon: '🏢' },
                             { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3', color: '#8b5cf6', icon: '🏗️' },
@@ -1006,9 +928,9 @@
                         ];
                         
                         orders.value = [
-                            { id: 'order-1', name: 'Заказ №2026-001', projectId: 'park-2', docsCount: 3 },
-                            { id: 'order-2', name: 'Заказ №2026-002', projectId: 'park-2', docsCount: 1 },
-                            { id: 'order-3', name: 'Заказ №БЦ-045', projectId: 'business-center', docsCount: 2 }
+                            { id: 'order-1', name: 'Заказ №2026-001', projectId: 'park-2', docsCount: 2 },
+                            { id: 'order-2', name: 'Заказ №2026-002', projectId: 'park-2', docsCount: 0 },
+                            { id: 'order-3', name: 'Заказ №БЦ-045', projectId: 'business-center', docsCount: 0 }
                         ];
                         
                         documents.value = [
@@ -1045,11 +967,8 @@
                     }
                 };
 
-                const refreshData = () => {
-                    loadData();
-                };
+                const refreshData = () => loadData();
 
-                // === COMPUTED ===
                 const currentTabName = computed(() => ({
                     registry: 'Реестр документации', upload: 'Загрузка файлов', audit: 'Журнал событий'
                 }[currentTab.value]));
@@ -1061,7 +980,7 @@
                 );
 
                 const sidebarClasses = computed(() => {
-                    const base = 'sidebar-transition z-40 h-full bg-slate-900 text-white flex flex-col shadow-xl';
+                    const base = 'sidebar-transition z-40 h-full bg-slate-900 text-white shadow-xl sidebar-wrapper';
                     if (isMobile.value) {
                         return `${base} fixed top-0 left-0 w-72 transform ${sidebarOpen.value ? 'translate-x-0' : '-translate-x-full'}`;
                     }
@@ -1110,7 +1029,6 @@
                     newVersionForm.value.docId && newVersionForm.value.fileName
                 );
 
-                // === HELPERS ===
                 const getProjectName = (id) => projects.value.find(p => p.id === id)?.name || '—';
                 const getProjectColor = (id) => projects.value.find(p => p.id === id)?.color || '#64748b';
                 const getOrderName = (id) => orders.value.find(o => o.id === id)?.name || '—';
@@ -1189,7 +1107,6 @@
                 const logIconClass = (t) => ({ upload: 'bg-blue-50 text-blue-600', error: 'bg-rose-50 text-rose-600', view: 'bg-indigo-50 text-indigo-600' }[t]);
                 const logIcon = (t) => ({ upload: 'fas fa-arrow-up', error: 'fas fa-triangle-exclamation', view: 'fas fa-eye' }[t]);
 
-                // === SIDEBAR & NAVIGATION ===
                 const toggleSidebar = () => {
                     if (isMobile.value) sidebarOpen.value = !sidebarOpen.value;
                 };
@@ -1211,7 +1128,6 @@
                 };
                 
                 const onProjectChange = () => {
-                    // Auto-select first order when project changes
                     const orders = getOrdersByProject(uploadForm.value.projectId);
                     if (orders.length > 0) {
                         uploadForm.value.orderId = orders[0].id;
@@ -1224,7 +1140,6 @@
                     else expandedOrders.value.splice(idx, 1);
                 };
 
-                // === MODALS & ACTIONS ===
                 const toggleUserMenu = () => { showUserMenu.value = !showUserMenu.value; };
                 
                 const openNewProjectModal = () => {
@@ -1236,11 +1151,6 @@
                     if (!newProjectForm.value.name) return;
                     
                     try {
-                        // В продакшене:
-                        // const newProject = await apiService.createProject(newProjectForm.value);
-                        // projects.value.push(newProject);
-                        
-                        // Mock:
                         const newId = 'proj-' + Date.now();
                         projects.value.push({
                             id: newId, name: newProjectForm.value.name,
@@ -1255,7 +1165,6 @@
                     }
                 };
 
-                // === DOWNLOAD ===
                 const downloadFile = (doc) => {
                     const content = generateMockFileContent(doc.fileType, doc.number);
                     triggerDownload(content, `${doc.number}.${getFileExtension(doc.fileType)}`);
@@ -1291,7 +1200,25 @@
                     document.body.removeChild(a); URL.revokeObjectURL(url);
                 };
 
-                // === XML EDITOR ===
+                // XML Validation simulation
+                const runValidationChecks = () => {
+                    const checks = [
+                        { name: 'Проверка структуры XML', status: 'valid', message: 'XML документ имеет корректную структуру' },
+                        { name: 'Проверка XSD схемы Минстроя', status: 'valid', message: 'Документ соответствует XSD-схеме' },
+                        { name: 'Проверка обязательных полей', status: 'valid', message: 'Все обязательные поля заполнены' },
+                        { name: 'Проверка кодировки', status: 'valid', message: 'Кодировка UTF-8' },
+                        { name: 'Проверка ссылок', status: 'processing', message: 'Проверка внешних ссылок...' }
+                    ];
+                    
+                    validationChecks.value = checks;
+                    
+                    // Simulate async validation
+                    setTimeout(() => {
+                        validationChecks.value[4].status = 'valid';
+                        validationChecks.value[4].message = 'Все ссылки корректны';
+                    }, 2000);
+                };
+
                 const formatXML = () => {
                     let formatted = xmlEditorContent.value.replace(/></g, '>\n<');
                     let indent = 0;
@@ -1308,7 +1235,6 @@
                     alert('✓ Изменения сохранены локально. Для применения требуется повторная валидация.');
                 };
 
-                // === NEW VERSION ===
                 const openNewVersionModal = (doc) => {
                     newVersionForm.value = {
                         docId: doc.id, docNumber: doc.number, currentVersion: doc.version,
@@ -1352,7 +1278,7 @@
                         const newVer = doc.version + 1;
                         
                         doc.versions.push({
-                            id: versionIdCounter++, number: newVer, uploadedAt: now,
+                            id: Date.now(), number: newVer, uploadedAt: now,
                             uploadedBy: currentUser.value.id, comment: newVersionForm.value.comment || 'Новая версия'
                         });
                         
@@ -1365,7 +1291,6 @@
                     }
                 };
 
-                // === FILE UPLOAD ===
                 const triggerUpload = () => fileInput.value?.click();
                 
                 const handleFile = (e) => {
@@ -1424,11 +1349,16 @@
                     }
                 };
 
-                // === MODAL ===
                 const openModal = (doc) => {
                     selectedDoc.value = { ...doc, versions: [...doc.versions] };
                     xmlEditorContent.value = generateMockFileContent(doc.fileType, doc.number);
                     modalTab.value = 'preview';
+                    
+                    // Run validation checks if XML
+                    if (doc.fileType === 'xml') {
+                        runValidationChecks();
+                    }
+                    
                     document.body.style.overflow = 'hidden';
                 };
                 
@@ -1441,7 +1371,6 @@
                     filterResponsible.value = 'all'; filterStatus.value = 'all'; filterType.value = 'all'; searchQuery.value = '';
                 };
 
-                // === RESPONSIVE ===
                 const handleResize = () => {
                     isMobile.value = window.innerWidth < 768;
                     if (!isMobile.value) sidebarOpen.value = false;
@@ -1458,45 +1387,34 @@
                 onMounted(() => {
                     window.addEventListener('resize', handleResize);
                     window.addEventListener('keydown', handleKeydown);
-                    
-                    // Initialize data
                     loadData();
-                    
-                    // Initialize WebSocket for real-time updates
-                    // initWebSocket();
-                    
-                    // Initialize upload form
                     resetUploadForm();
                 });
                 onUnmounted(() => {
                     window.removeEventListener('resize', handleResize);
                     window.removeEventListener('keydown', handleKeydown);
-                    if (wsConnection) wsConnection.close();
                 });
 
                 return {
-                    // State
                     role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
                     selectedProject, selectedOrder, sidebarOpen, sidebarCollapsed, isMobile,
                     expandedProjects, expandedOrders, showNewProjectModal, showNewVersionModal, uploadingNewVersion,
                     apiConnected, loading, error,
                     projects, orders, employees, currentUser, documents, auditLogs,
-                    uploadForm, newVersionForm, newProjectForm, projectColors, projectIcons,
+                    uploadForm, newVersionForm, newProjectForm, projectColors, projectIcons, validationChecks,
                     searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
                     filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, canSubmitNewVersion,
                     fileInput, newVersionFileInput, xmlEditorContent, sidebarClasses,
                     
-                    // Actions
                     toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, onProjectChange, toggleOrderExpand,
                     toggleUserMenu, openNewProjectModal, createProject,
                     downloadFile, downloadVersion, triggerDownload,
-                    formatXML, saveXMLEdit,
+                    runValidationChecks, formatXML, saveXMLEdit,
                     openNewVersionModal, triggerNewVersionUpload, handleNewVersionFile, submitNewVersion,
                     triggerUpload, handleFile, resetUploadForm, submitUpload,
                     openModal, closeModal, resetFilters, refreshData,
                     
-                    // Helpers
-                    getProjectName, getProjectColor, getOrderName, getOrdersByProject, getDocumentsByOrder,
+                    getProjectName, getProjectColor, getOrderName, getOrdersByProject, getDocumentsByOrder, getDocsCountForOrder,
                     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
                     getProjectDocsCount, getProjectBadgeStyle,
                     getFileIcon, getFileIconColor, getFileIconClass, getFileTypeName,
