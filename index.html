@@ -1,270 +1,136 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-<meta charset="UTF-8">
-<title>Artwell Verify | Ultimate PLM System</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-.custom-scrollbar::-webkit-scrollbar { width:4px }
-.custom-scrollbar::-webkit-scrollbar-thumb { background:#334155;border-radius:10px }
-.code-editor { font-family:monospace;background:#020617;color:#94a3b8 }
-.animate-up { animation:fadeInUp .3s ease-out forwards }
-@keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1} }
-</style>
-</head>
-
-<body class="bg-[#020617] text-slate-300 font-sans overflow-hidden">
-
-<div id="app" class="flex h-screen">
-
-<!-- SIDEBAR -->
-<aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col">
-
-<h1 class="text-white text-xl font-black mb-6">ARTWELL</h1>
-
-<div class="flex-1 overflow-auto custom-scrollbar pr-2">
-<button onclick="createNewFolder()" class="mb-4 bg-blue-600 px-4 py-2 rounded-xl text-xs font-black">
-+ папка
-</button>
-<nav id="project-nav"></nav>
-</div>
-
-</aside>
-
-<!-- MAIN -->
-<main class="flex-1 flex flex-col">
-
-<header class="h-24 px-10 flex items-center border-b border-slate-800">
-
-<button onclick="fileInput.click()" class="bg-white text-black px-8 py-3 rounded-2xl font-black">
-ПРИКРЕПИТЬ ФАЙЛ
-</button>
-
-</header>
-
-<div id="registry"
-     class="flex-1 p-10 overflow-y-auto custom-scrollbar space-y-4"
-     ondrop="dropUpload(event)"
-     ondragover="allowDrop(event)">
-</div>
-
-</main>
-
-</div>
-
-<!-- MODAL -->
-<div id="editorModal"
-     style="display:none"
-     class="fixed inset-0 bg-black/90 flex items-center justify-center">
-
-<div class="bg-[#0f172a] w-[1000px] h-[85vh] rounded-[40px] flex flex-col overflow-hidden">
-
-<div class="p-8 border-b border-slate-800 flex justify-between">
-<input id="modalFileName"
-       class="bg-transparent text-white text-2xl font-black outline-none">
-<button onclick="closeModal()">X</button>
-</div>
-
-<div class="flex flex-1 overflow-hidden">
-
-<div class="flex-1 flex flex-col">
-
-<div class="flex gap-2 p-4 border-b border-slate-800">
-<button onclick="formatDoc('bold')" class="bg-slate-800 px-4 py-2 rounded-xl">B</button>
-<button onclick="formatDoc('italic')" class="bg-slate-800 px-4 py-2 rounded-xl">I</button>
-<button onclick="formatDoc('insertUnorderedList')" class="bg-slate-800 px-4 py-2 rounded-xl">LIST</button>
-<button onclick="formatDoc('formatBlock','pre')" class="bg-slate-800 px-4 py-2 rounded-xl">{ }</button>
-</div>
-
-<div id="fileContent"
-     contenteditable
-     class="flex-1 code-editor p-12 overflow-auto custom-scrollbar">
-</div>
-
-<div id="filePreview"
-     class="hidden flex-1 p-12 overflow-auto">
-</div>
-
-</div>
-
-<div class="w-80 border-l border-slate-800 p-8">
-
-<button onclick="saveAllChanges()"
-        class="bg-emerald-600 w-full p-4 rounded-2xl font-black">
-SAVE
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<input type="file" id="fileInput" multiple class="hidden" onchange="handleFileUpload(this)">
-
 <script>
-
 let state = {
-folder:"all",
-folders:["ЖК Артвелл"],
-docs:[],
-activeId:null
-}
+    role: 'contractor',
+    folder: 'all',
+    folders: ['ЖК Артвелл', 'Изыскания'],
+    docs: [
+        { id: 1, name: 'MainSchema-01.xsd', project: 'ЖК Артвелл', status: 'готов', ver: 1, content: 'schema...' },
+        { id: 2, name: 'GeoReport.xsd', project: 'Изыскания', status: 'в разработке', ver: 1, content: 'geo...' }
+    ],
+    activeId: null
+};
 
-function render(){
+function render() {
 
-const nav = document.getElementById("project-nav")
+    const nav = document.getElementById('project-nav');
 
-nav.innerHTML =
-`<button onclick="setFolder('all')" class="block w-full text-left p-3">Все</button>` +
-state.folders.map(f =>
-`<button onclick="setFolder('${f}')" class="block w-full text-left p-3">${f}</button>`
-).join("")
+    nav.innerHTML =
+        `<button onclick="setFolder('all')" class="w-full text-left p-4 rounded-2xl ${state.folder==='all'?'bg-blue-600/10 text-blue-400':'text-slate-500'}">
+            Все документы
+        </button>`
+        +
+        state.folders.map(f=>`
+            <button onclick="setFolder('${f}')" class="w-full text-left p-4 rounded-2xl ${state.folder===f?'bg-blue-600/10 text-blue-400':'text-slate-500'}">
+                ${f}
+            </button>
+        `).join('');
 
-const list = document.getElementById("registry")
+    const container = document.getElementById('registry');
 
-let docs = state.folder==="all"
-? state.docs
-: state.docs.filter(d=>d.project===state.folder)
+    const filtered =
+        state.folder==='all'
+        ? state.docs
+        : state.docs.filter(d=>d.project===state.folder);
 
-list.innerHTML = docs.map(d=>`
+    container.innerHTML = filtered.map(doc=>`
+        <div class="bg-[#0f172a] p-8 rounded-3xl flex justify-between items-center">
+            <div>
+                <h4 class="text-white font-black">${doc.name}</h4>
+                <p class="text-xs text-slate-500">${doc.project} • v.${doc.ver}</p>
+            </div>
 
-<div class="bg-[#0f172a] p-8 rounded-[30px] flex justify-between">
+            <div class="flex gap-3">
+                <button onclick="openEditor(${doc.id})" class="bg-slate-800 px-6 py-3 rounded-xl">
+                    ${state.role==='contractor'?'Править':'Контроль'}
+                </button>
 
-<div>
-<div class="text-white font-black">${d.name}</div>
-<div class="text-xs text-slate-500">v.${d.ver}</div>
-</div>
-
-<button onclick="openEditor(${d.id})"
-        class="bg-blue-600 px-6 py-2 rounded-xl font-black">
-OPEN
-</button>
-
-</div>
-
-`).join("")
-
-}
-
-function uploadFiles(files){
-
-[...files].forEach(file=>{
-
-const reader = new FileReader()
-
-reader.onload = e=>{
-
-state.docs.unshift({
-id:Date.now()+Math.random(),
-name:file.name,
-project:state.folder==="all"?state.folders[0]:state.folder,
-ver:1,
-type:file.type,
-content:e.target.result
-})
-
-render()
+                ${state.role==='contractor'
+                    ? `<button onclick="deleteDoc(${doc.id})" class="bg-rose-900 px-4 rounded-xl">X</button>`
+                    : ''
+                }
+            </div>
+        </div>
+    `).join('');
 
 }
 
-if(file.type.startsWith("text") || file.name.endsWith(".xml"))
-reader.readAsText(file)
-else
-reader.readAsDataURL(file)
-
-})
-
+function setRole(r){
+    state.role=r;
+    render();
 }
 
-function handleFileUpload(input){
-uploadFiles(input.files)
-}
-
-function allowDrop(e){ e.preventDefault() }
-
-function dropUpload(e){
-e.preventDefault()
-uploadFiles(e.dataTransfer.files)
+function setFolder(f){
+    state.folder=f;
+    document.getElementById('current-project-title').innerText =
+        f==='all' ? 'Все документы' : f;
+    render();
 }
 
 function openEditor(id){
+    state.activeId=id;
+    const doc=state.docs.find(d=>d.id===id);
 
-state.activeId=id
+    document.getElementById('modalFileName').value=doc.name;
+    document.getElementById('fileContent').value=doc.content;
+    document.getElementById('in-status').value=doc.status;
 
-const doc = state.docs.find(d=>d.id===id)
-
-modalFileName.value = doc.name
-
-const editor = document.getElementById("fileContent")
-const preview = document.getElementById("filePreview")
-
-editor.classList.remove("hidden")
-preview.classList.add("hidden")
-
-if(doc.type?.startsWith("image")){
-preview.innerHTML = `<img src="${doc.content}" class="max-h-full">`
-preview.classList.remove("hidden")
-editor.classList.add("hidden")
-}
-else if(doc.type==="application/pdf"){
-preview.innerHTML = `<iframe src="${doc.content}" class="w-full h-full"></iframe>`
-preview.classList.remove("hidden")
-editor.classList.add("hidden")
-}
-else if(!doc.type?.startsWith("text")){
-preview.innerHTML = `<a download="${doc.name}" href="${doc.content}" class="bg-blue-600 px-6 py-3 rounded-xl">СКАЧАТЬ</a>`
-preview.classList.remove("hidden")
-editor.classList.add("hidden")
-}
-else{
-editor.innerHTML = doc.content
-}
-
-editorModal.style.display="flex"
-
+    document.getElementById('editorModal').style.display='flex';
 }
 
 function saveAllChanges(){
 
-const doc = state.docs.find(d=>d.id===state.activeId)
+    const doc=state.docs.find(d=>d.id===state.activeId);
 
-doc.name = modalFileName.value
-doc.content = fileContent.innerHTML
-doc.ver++
+    doc.name=document.getElementById('modalFileName').value;
+    doc.content=document.getElementById('fileContent').value;
+    doc.status=document.getElementById('in-status').value;
 
-closeModal()
-render()
+    if(state.role==='contractor'){
+        doc.project=document.getElementById('in-proj').value;
+        doc.ver++;
+    }
 
+    closeModal();
+    render();
+}
+
+function handleFileUpload(input){
+
+    if(!input.files.length) return;
+
+    const file=input.files[0];
+
+    const reader=new FileReader();
+
+    reader.onload=e=>{
+
+        state.docs.unshift({
+            id:Date.now(),
+            name:file.name,
+            project: state.folder==='all'
+                ? state.folders[0]
+                : state.folder,
+            status:'новый',
+            ver:1,
+            content:e.target.result
+        });
+
+        render();
+    };
+
+    reader.readAsText(file);
+}
+
+function deleteDoc(id){
+    if(confirm('Удалить?')){
+        state.docs=state.docs.filter(d=>d.id!==id);
+        render();
+    }
 }
 
 function closeModal(){
-editorModal.style.display="none"
+    document.getElementById('editorModal').style.display='none';
 }
 
-function createNewFolder(){
-let n = prompt("folder")
-if(!n) return
-state.folders.push(n)
-render()
-}
-
-function setFolder(f){
-state.folder=f
-render()
-}
-
-function formatDoc(cmd,val=null){
-document.execCommand(cmd,false,val)
-}
-
-render()
-
+render();
 </script>
-
-</body>
-</html>
