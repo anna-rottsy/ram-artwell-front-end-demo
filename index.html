@@ -3,102 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artwell XML Service MVP</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com"></script>
-</head>
-<body class="bg-gray-50 text-gray-900">
-    <div id="app" class="min-h-screen flex flex-col">
-        <!-- Header -->
-        <header class="bg-white border-b p-4 flex justify-between items-center shadow-sm">
-            <h1 class="text-xl font-bold text-blue-700">Artwell Construction Portal</h1>
-            <div class="flex items-center gap-4">
-                <span class="text-sm f<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Artwell Construction MVP</title>
+    <title>Artwell Construction MVP | Anna Verify</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
+    <style>
+        [v-cloak] { display: none; }
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
+    </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans">
-    <div id="app" class="min-h-screen flex">
-        <!-- Sidebar -->
-        <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-xl">
-            <div class="p-6 border-b border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div class="bg-blue-600 p-2 rounded-lg">
-                        <i class="fas fa-city text-xl"></i>
-                    </div>
-                    <span class="font-bold text-lg tracking-tight text-blue-400">ARTWELL <span class="text-white">BUILD</span></span>
+    <div id="app" v-cloak class="min-h-screen flex">
+        
+        <!-- SIDEBAR (Меню и Роли) -->
+        <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-xl z-20">
+            <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-layer-group text-xl text-white"></i>
                 </div>
+                <span class="font-bold text-lg tracking-tight">ARTWELL <span class="text-blue-400">XML</span></span>
             </div>
             
-            <nav class="flex-1 p-4 space-y-2">
+            <nav class="flex-1 p-4 space-y-2 mt-4">
                 <button @click="currentTab = 'registry'" :class="navClass('registry')">
-                    <i class="fas fa-file-invoice w-6"></i> Реестр документов
+                    <i class="fas fa-list-ul w-6"></i> Реестр документов
                 </button>
                 <button @click="currentTab = 'upload'" v-if="role === 'contractor'" :class="navClass('upload')">
-                    <i class="fas fa-cloud-upload-alt w-6"></i> Загрузка XML
+                    <i class="fas fa-file-upload w-6"></i> Загрузка XML
                 </button>
                 <button @click="currentTab = 'audit'" :class="navClass('audit')">
-                    <i class="fas fa-clipboard-list w-6"></i> Аудит-лог
+                    <i class="fas fa-history w-6"></i> Аудит-лог
                 </button>
             </nav>
 
-            <div class="p-4 border-t border-slate-800 space-y-4">
-                <div class="bg-slate-800 p-3 rounded-lg text-sm">
-                    <p class="text-slate-400 mb-2">Режим доступа:</p>
-                    <select v-model="role" class="w-full bg-slate-700 border-none rounded p-1 text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="contractor">👷 Подрядчик</option>
-                        <option value="client">🕵️ Заказчик</option>
-                    </select>
-                </div>
+            <div class="p-6 border-t border-slate-800 bg-slate-950/50">
+                <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Ваша роль</label>
+                <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                    <option value="contractor">👷 Подрядчик</option>
+                    <option value="client">🕵️ Заказчик</option>
+                </select>
             </div>
         </aside>
 
-        <!-- Main Area -->
-        <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- MAIN AREA -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
             <!-- Top Nav -->
-            <header class="h-16 bg-white border-b flex items-center justify-between px-8 shadow-sm z-10">
-                <h2 class="text-lg font-semibold text-slate-700 capitalize">{{ currentTabName }}</h2>
+            <header class="h-16 bg-white border-b flex items-center justify-between px-8 shadow-sm shrink-0">
+                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm text-slate-500">Пользователь: <span class="font-medium text-slate-800">Анна (Верифай)</span></span>
-                    <div class="w-8 h-8 rounded-full bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-700 font-bold text-xs">АР</div>
+                    <div class="text-right">
+                        <p class="text-xs font-bold text-slate-800">Анна (Верифай)</p>
+                        <p class="text-[10px] text-slate-400">Разработчик интерфейса</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white font-bold shadow-md">A</div>
                 </div>
             </header>
 
-            <!-- Content Container -->
+            <!-- Scrollable Content -->
             <div class="flex-1 overflow-y-auto p-8">
                 
-                <!-- Tab: REGISTRY -->
-                <section v-if="currentTab === 'registry'" class="space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- TAB: REGISTRY -->
+                <section v-if="currentTab === 'registry'" class="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="w-full text-left border-collapse">
-                            <thead class="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th class="p-4 text-xs uppercase text-slate-500 font-bold tracking-wider">Документ</th>
-                                    <th class="p-4 text-xs uppercase text-slate-500 font-bold tracking-wider">Статус</th>
-                                    <th class="p-4 text-xs uppercase text-slate-500 font-bold tracking-wider">Версия</th>
-                                    <th class="p-4 text-xs uppercase text-slate-500 font-bold tracking-wider">Объект</th>
-                                    <th class="p-4 text-xs uppercase text-slate-500 font-bold tracking-wider text-right">Действия</th>
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-200">
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Документ / Дата</th>
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Статус валидации</th>
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-center">Версия</th>
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-right">Действие</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr v-for="doc in documents" :key="doc.id" class="border-b border-slate-100 hover:bg-slate-50 transition">
+                            <tbody class="divide-y divide-slate-100">
+                                <tr v-for="doc in documents" :key="doc.id" class="hover:bg-blue-50/30 transition-colors group">
                                     <td class="p-4">
-                                        <div class="font-semibold text-slate-800">{{ doc.number }}</div>
-                                        <div class="text-xs text-slate-400">Изменён: {{ doc.updatedAt }}</div>
+                                        <div class="font-bold text-slate-800 group-hover:text-blue-600 transition">{{ doc.number }}</div>
+                                        <div class="text-[11px] text-slate-400 font-medium">{{ doc.updatedAt }}</div>
                                     </td>
                                     <td class="p-4">
                                         <span :class="statusBadge(doc.status)">{{ statusText(doc.status) }}</span>
                                     </td>
-                                    <td class="p-4 text-slate-600">v.{{ doc.version }}</td>
-                                    <td class="p-4 text-slate-600">ЖК "Артвелл Сити"</td>
+                                    <td class="p-4 text-center">
+                                        <span class="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold text-slate-600">v{{ doc.version }}</span>
+                                    </td>
                                     <td class="p-4 text-right">
-                                        <button @click="viewDetails(doc)" class="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 border border-blue-200 rounded-md hover:bg-blue-50 transition">Карточка</button>
+                                        <button @click="openModal(doc)" class="text-xs font-bold text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-600 px-4 py-1.5 rounded-lg transition">КАРТОЧКА</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -106,72 +96,91 @@
                     </div>
                 </section>
 
-                <!-- Tab: UPLOAD -->
-                <section v-if="currentTab === 'upload'" class="max-w-3xl mx-auto">
-                    <div @click="triggerUpload" class="border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center bg-white hover:border-blue-500 hover:bg-blue-50 transition cursor-pointer group">
-                        <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
-                            <i class="fas fa-file-code text-2xl"></i>
+                <!-- TAB: UPLOAD -->
+                <section v-if="currentTab === 'upload'" class="max-w-2xl mx-auto py-12 animate-in zoom-in duration-300">
+                    <div @click="triggerUpload" class="border-4 border-dashed border-slate-200 bg-white rounded-3xl p-16 text-center hover:border-blue-500 hover:bg-blue-50/50 transition cursor-pointer group shadow-sm">
+                        <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-6 transition-transform shadow-inner">
+                            <i class="fas fa-cloud-upload-alt text-3xl"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-700">Перетащите XML-файл сюда</h3>
-                        <p class="text-slate-500 text-sm mt-2">Соответствие форматам Минстроя России (XSD)</p>
-                        <button class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium shadow-md">Выбрать файл</button>
+                        <h3 class="text-xl font-black text-slate-800 mb-2 tracking-tight">Загрузить XML-документ</h3>
+                        <p class="text-slate-500 text-sm max-w-xs mx-auto">Система автоматически проверит файл на соответствие XSD-схемам Минстроя</p>
+                        <div class="mt-8 inline-block bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:scale-105 transition active:scale-95">Выбрать файл</div>
                     </div>
                 </section>
 
-                <!-- Tab: AUDIT -->
-                <section v-if="currentTab === 'audit'" class="space-y-4">
-                    <div v-for="log in auditLogs" class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex items-center gap-4">
-                        <div :class="logIconClass(log.type)">
+                <!-- TAB: AUDIT LOG -->
+                <section v-if="currentTab === 'audit'" class="space-y-3 max-w-4xl mx-auto animate-in slide-in-from-right-4 duration-500">
+                    <div v-for="log in auditLogs" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 hover:shadow-md transition">
+                        <div :class="logIconClass(log.type)" class="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-lg">
                             <i :class="logIcon(log.type)"></i>
                         </div>
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-800">{{ log.message }}</p>
-                            <p class="text-xs text-slate-400">{{ log.user }} • {{ log.time }}</p>
+                            <p class="text-sm font-bold text-slate-800 leading-tight">{{ log.message }}</p>
+                            <p class="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">{{ log.user }} • {{ log.time }}</p>
                         </div>
                     </div>
                 </section>
-
-                <!-- Modal: Document Details -->
-                <div v-if="selectedDoc" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
-                        <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                            <h3 class="text-xl font-bold">Карточка: {{ selectedDoc.number }}</h3>
-                            <button @click="selectedDoc = null" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
-                        </div>
-                        <div class="p-6 grid grid-cols-2 gap-6">
-                            <div class="space-y-4">
-                                <div class="text-sm">
-                                    <label class="block text-slate-400 uppercase font-bold text-[10px]">Статус валидации</label>
-                                    <span :class="statusBadge(selectedDoc.status)" class="mt-1 inline-block">{{ statusText(selectedDoc.status) }}</span>
-                                </div>
-                                <div class="text-sm">
-                                    <label class="block text-slate-400 uppercase font-bold text-[10px]">Текущая версия</label>
-                                    <p class="font-medium text-slate-800">Версия {{ selectedDoc.version }}</p>
-                                </div>
-                                <div v-if="selectedDoc.status === 'invalid'" class="bg-red-50 p-3 rounded-lg border border-red-100">
-                                    <p class="text-xs text-red-700 font-semibold mb-1">Ошибки XSD:</p>
-                                    <p class="text-[11px] text-red-600 italic">Строка 12: Элемент 'Contractor' не найден в схеме</p>
-                                </div>
-                            </div>
-                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <h4 class="text-xs font-bold text-slate-500 uppercase mb-3">История версий</h4>
-                                <div class="space-y-3">
-                                    <div v-for="i in selectedDoc.version" :key="i" class="flex items-center justify-between text-xs border-b border-slate-200 pb-2 last:border-0">
-                                        <span class="text-slate-600 font-medium">Версия v.{{ i }}</span>
-                                        <button class="text-blue-600 hover:underline"><i class="fas fa-download mr-1"></i> XML</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="p-6 bg-slate-50 border-t flex justify-end">
-                            <button @click="selectedDoc = null" class="bg-slate-200 text-slate-700 px-6 py-2 rounded-lg font-bold">Закрыть</button>
-                        </div>
-                    </div>
-                </div>
 
             </div>
         </main>
 
+        <!-- MODAL: DOCUMENT DETAILS -->
+        <transition name="modal">
+            <div v-if="selectedDoc" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <!-- Overlay -->
+                <div @click="closeModal" class="absolute inset-0 bg-slate-900/60 backdrop-blur-md"></div>
+                
+                <!-- Card -->
+                <div class="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+                    <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800 leading-none">{{ selectedDoc.number }}</h3>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Просмотр исполнительной документации</p>
+                        </div>
+                        <button @click="closeModal" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Текущий статус</label>
+                                <span :class="statusBadge(selectedDoc.status)" class="text-xs py-1.5 px-4 font-bold">{{ statusText(selectedDoc.status) }}</span>
+                            </div>
+                            
+                            <div v-if="selectedDoc.status === 'invalid'" class="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                                <p class="text-[10px] uppercase font-black text-rose-400 mb-2">Обнаружены ошибки XSD</p>
+                                <p class="text-xs text-rose-700 font-bold leading-relaxed italic">Линия 42: Элемент '&lt;Contractor&gt;' не соответствует схеме Минстроя России.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Объект строительства</label>
+                                <p class="text-sm font-bold text-slate-800 italic">ЖК «Артвелл Парк», корпус 2</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2">
+                                <i class="fas fa-history text-blue-500"></i> История версий
+                            </h4>
+                            <div class="space-y-2">
+                                <div v-for="i in selectedDoc.version" :key="i" class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-slate-100 group hover:border-blue-300 transition cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-700">v{{ i }}.0</span>
+                                    <i class="fas fa-download text-[10px] text-blue-500 group-hover:scale-125 transition"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-slate-50 border-t flex justify-end gap-3">
+                        <button @click="closeModal" class="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">Закрыть</button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- HIDDEN FILE INPUT -->
         <input type="file" ref="fileInput" @change="handleFile" class="hidden" accept=".xml">
     </div>
 
@@ -183,186 +192,79 @@
                 const role = ref('contractor');
                 const currentTab = ref('registry');
                 const selectedDoc = ref(null);
+                
                 const documents = ref([
-                    { id: 1, number: 'АКТ-СК-2024-05', status: 'valid', version: 3, updatedAt: '25.03.2026 14:20' },
-                    { id: 2, number: 'ЖУР-БЕТ-01', status: 'invalid', version: 1, updatedAt: '24.03.2026 09:15' },
-                    { id: 3, number: 'ПРЕДПИС-12', status: 'valid', version: 1, updatedAt: '26.03.2026 10:00' }
+                    { id: 1, number: 'АКТ-001/2026', status: 'valid', version: 2, updatedAt: '26.03.2026 14:00' },
+                    { id: 2, number: 'ЖУР-БЕТ-042', status: 'invalid', version: 1, updatedAt: '25.03.2026 09:15' },
+                    { id: 3, number: 'ПРЕДПИС-12-А', status: 'valid', version: 1, updatedAt: '24.03.2026 18:30' }
                 ]);
+
                 const auditLogs = ref([
-                    { type: 'upload', user: 'Иванов П.', message: 'Загружена новая версия АКТ-СК-2024-05', time: '14:20 сегодня' },
-                    { type: 'error', user: 'Система', message: 'Ошибка валидации ЖУР-БЕТ-01 по XSD Минстроя', time: 'Вчера 09:15' },
-                    { type: 'view', user: 'Петров С. (Заказчик)', message: 'Просмотр документа ПРЕДПИС-12', time: 'Сегодня 11:30' }
+                    { type: 'upload', user: 'Анна (Подрядчик)', message: 'Успешная загрузка XML: АКТ-001/2026', time: 'Сегодня 14:00' },
+                    { type: 'error', user: 'XSD Валидатор', message: 'Ошибка схемы в файле ЖУР-БЕТ-042', time: 'Вчера 09:15' },
+                    { type: 'view', user: 'Менеджер Артвелл (Заказчик)', message: 'Просмотр документа ПРЕДПИС-12-А', time: '24.03.2026' }
                 ]);
 
                 const currentTabName = computed(() => {
-                    const names = { registry: 'Реестр документов', upload: 'Загрузка новых файлов', audit: 'Журнал событий (Аудит)' };
-                    return names[currentTab.value];
+                    const titles = { registry: 'Реестр документации', upload: 'Новая загрузка', audit: 'Журнал событий' };
+                    return titles[currentTab.value];
                 });
 
-                const navClass = (tab) => `w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${currentTab.value === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`;
+                // Функции модалки (сделаны максимально надежно)
+                const openModal = (doc) => {
+                    console.log('Open:', doc.number);
+                    selectedDoc.value = doc;
+                };
                 
-                const statusBadge = (s) => {
-                    const styles = { 
-                        valid: 'bg-emerald-100 text-emerald-700', 
-                        invalid: 'bg-rose-100 text-rose-700', 
-                        processing: 'bg-amber-100 text-amber-700 animate-pulse' 
-                    };
-                    return `px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${styles[s]}`;
+                const closeModal = () => {
+                    console.log('Close Modal');
+                    selectedDoc.value = null;
                 };
 
-                const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка XSD', processing: 'Обработка...' }[s]);
+                const statusBadge = (s) => {
+                    const base = "px-3 py-1 rounded-xl text-[10px] font-black tracking-tighter uppercase ";
+                    if (s === 'valid') return base + "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                    if (s === 'invalid') return base + "bg-rose-50 text-rose-600 border border-rose-200";
+                    return base + "bg-amber-50 text-amber-600 border border-amber-200 animate-pulse";
+                };
+
+                const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка XSD', processing: 'Анализ...' }[s]);
+
+                const navClass = (tab) => `w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentTab.value === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 translate-x-2' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`;
 
                 const logIconClass = (t) => {
-                    const styles = { upload: 'bg-blue-100 text-blue-600', error: 'bg-red-100 text-red-600', view: 'bg-slate-100 text-slate-600' };
-                    return `w-10 h-10 rounded-full flex items-center justify-center ${styles[t]}`;
+                    const s = { upload: 'bg-blue-50 text-blue-600', error: 'bg-rose-50 text-rose-600', view: 'bg-indigo-50 text-indigo-600' };
+                    return s[t];
                 };
 
-                const logIcon = (t) => ({ upload: 'fas fa-upload', error: 'fas fa-exclamation-triangle', view: 'fas fa-eye' }[t]);
-
-                const triggerUpload = () => document.querySelector('input[type="file"]').click();
-
-                const handleFile = (e) => {
-                    const name = e.target.files[0].name.replace('.xml', '');
-                    const newDoc = { id: Date.now(), number: name, status: 'processing', version: 1, updatedAt: 'Только что' };
-                    documents.value.unshift(newDoc);
-                    currentTab.value = 'registry';
-                    
-                    auditLogs.value.unshift({ type: 'upload', user: 'Анна', message: `Инициирована загрузка ${name}`, time: 'Только что' });
-
-                    setTimeout(() => {
-                        newDoc.status = Math.random() > 0.3 ? 'valid' : 'invalid';
-                        if (newDoc.status === 'invalid') {
-                            auditLogs.value.unshift({ type: 'error', user: 'Система', message: `Файл ${name} не прошел валидацию`, time: 'Только что' });
-                        }
-                    }, 2500);
-                };
-
-                const viewDetails = (doc) => selectedDoc.value = doc;
-
-                return { 
-                    role, currentTab, currentTabName, documents, auditLogs, selectedDoc,
-                    navClass, statusBadge, statusText, triggerUpload, handleFile, viewDetails, logIcon, logIconClass 
-                };
-            }
-        }).mount('#app');
-    </script>
-</body>
-</html>
-ont-medium">Роль:</span>
-                <select v-model="role" class="border rounded p-1 text-sm bg-gray-50">
-                    <option value="contractor">Подрядчик (Загрузка)</option>
-                    <option value="client">Заказчик (Просмотр)</option>
-                </select>
-            </div>
-        </header>
-
-        <div class="flex flex-1">
-            <!-- Sidebar -->
-            <aside class="w-64 bg-white border-r p-6 hidden md:block">
-                <nav class="space-y-4">
-                    <div class="font-bold text-gray-400 text-xs uppercase">Меню</div>
-                    <a href="#" class="block text-blue-600 font-medium">Реестр документов</a>
-                    <a href="#" class="block text-gray-600 hover:text-blue-600">Объекты</a>
-                    <a href="#" class="block text-gray-600 hover:text-blue-600">Аудит-лог</a>
-                </nav>
-            </aside>
-
-            <!-- Main Content -->
-            <main class="flex-1 p-8">
-                <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-2xl font-semibold">Исполнительная документация</h2>
-                    <!-- Кнопка только для подрядчика -->
-                    <button v-if="role === 'contractor'" @click="triggerUpload" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                        + Загрузить XML
-                    </button>
-                </div>
-
-                <!-- Таблица документов -->
-                <div class="bg-white rounded-xl shadow border overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-gray-50 border-b">
-                            <tr>
-                                <th class="p-4 font-semibold text-sm">Номер документа</th>
-                                <th class="p-4 font-semibold text-sm">Статус</th>
-                                <th class="p-4 font-semibold text-sm">Версия</th>
-                                <th class="p-4 font-semibold text-sm">Объект</th>
-                                <th class="p-4 font-semibold text-sm">Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="doc in documents" :key="doc.id" class="border-b hover:bg-gray-50">
-                                <td class="p-4 font-medium">{{ doc.number }}</td>
-                                <td class="p-4">
-                                    <span :class="statusClass(doc.status)" class="px-2 py-1 rounded-full text-xs font-bold uppercase">
-                                        {{ doc.status === 'valid' ? 'Валиден' : (doc.status === 'error' ? 'Ошибка XSD' : 'Обработка') }}
-                                    </span>
-                                </td>
-                                <td class="p-4 text-gray-600">v{{ doc.version }}</td>
-                                <td class="p-4 text-gray-600">ЖК "Меридиан"</td>
-                                <td class="p-4">
-                                    <button class="text-blue-600 hover:underline text-sm">Открыть</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Симуляция лога ошибок (появится при ошибке) -->
-                <div v-if="lastError" class="mt-8 bg-red-50 border border-red-200 p-4 rounded-lg">
-                    <h3 class="text-red-700 font-bold mb-2">Ошибки валидации (XSD):</h3>
-                    <p class="text-sm text-red-600">{{ lastError }}</p>
-                </div>
-            </main>
-        </div>
-
-        <!-- Скрытый инпут для файлов -->
-        <input type="file" ref="fileInput" @change="onFileSelected" class="hidden" accept=".xml">
-    </div>
-
-    <script>
-        const { createApp, ref } = Vue;
-
-        createApp({
-            setup() {
-                const role = ref('contractor');
-                const lastError = ref(null);
-                const documents = ref([
-                    { id: 1, number: 'АКТ-001', status: 'valid', version: 1 },
-                    { id: 2, number: 'ЖУР-15', status: 'error', version: 2 }
-                ]);
+                const logIcon = (t) => ({ upload: 'fas fa-arrow-up', error: 'fas fa-bug', view: 'fas fa-eye' }[t]);
 
                 const triggerUpload = () => {
                     document.querySelector('input[type="file"]').click();
                 };
 
-                const onFileSelected = (event) => {
-                    const fileName = event.target.files[0].name;
-                    lastError.value = null;
+                const handleFile = (e) => {
+                    if (!e.target.files.length) return;
+                    const name = e.target.files[0].name.replace('.xml', '');
+                    const newDoc = { id: Date.now(), number: name, status: 'processing', version: 1, updatedAt: 'Только что' };
                     
-                    // Симуляция работы бэкенда
-                    const newDoc = { id: Date.now(), number: fileName.replace('.xml', ''), status: 'processing', version: 1 };
                     documents.value.unshift(newDoc);
+                    currentTab.value = 'registry';
+                    
+                    auditLogs.value.unshift({ type: 'upload', user: 'Анна', message: `Файл ${name} отправлен на валидацию`, time: 'Только что' });
 
                     setTimeout(() => {
-                        // Каждое второе загруженное — с ошибкой (для демонстрации)
-                        if (documents.value.length % 2 === 0) {
-                            newDoc.status = 'error';
-                            lastError.value = "Строка 42: Элемент 'Contractor' не соответствует схеме Минстроя России.";
-                        } else {
-                            newDoc.status = 'valid';
+                        newDoc.status = Math.random() > 0.4 ? 'valid' : 'invalid';
+                        if (newDoc.status === 'invalid') {
+                            auditLogs.value.unshift({ type: 'error', user: 'Система', message: `Валидация ${name} провалена`, time: 'Только что' });
                         }
                     }, 2000);
                 };
 
-                const statusClass = (status) => {
-                    return {
-                        'bg-green-100 text-green-700': status === 'valid',
-                        'bg-red-100 text-red-700': status === 'error',
-                        'bg-yellow-100 text-yellow-700 animate-pulse': status === 'processing',
-                    };
+                return { 
+                    role, currentTab, currentTabName, documents, auditLogs, selectedDoc,
+                    openModal, closeModal, statusBadge, statusText, navClass, logIcon, logIconClass, triggerUpload, handleFile 
                 };
-
-                return { role, documents, triggerUpload, onFileSelected, statusClass, lastError };
             }
         }).mount('#app');
     </script>
