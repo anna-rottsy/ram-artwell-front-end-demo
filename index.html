@@ -2,231 +2,382 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Artwell Verify | PLM System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artwell Construction MVP | Anna Verify</title>
     
-    <!-- Подключаем редакторы (Таблицы и Код) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net">
-    <script src="https://cdn.jsdelivr.net"></script>
-    <script src="https://cdnjs.cloudflare.com"></script>
-
+    <!-- ИСПРАВЛЕНО: Корректные ссылки CDN без пробелов -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .handsontable { color: #cbd5e1 !important; }
-        .htCore td, .htCore th { background: #0f172a !important; border-color: #334155 !important; color: #94a3b8 !important; }
-        .animate-up { animation: fadeInUp 0.3s ease-out forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; } }
+        [v-cloak] { display: none; }
+        /* Кастомные стили для скроллбара */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Плавные переходы для модалки */
+        .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+        .modal-enter-from, .modal-leave-to { opacity: 0; }
+        .modal-enter-from .modal-card, .modal-leave-to .modal-card { transform: scale(0.95) translateY(10px); }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-300 font-sans overflow-hidden">
-
-    <div id="app" class="flex h-screen">
-        <!-- ЛЕВАЯ ПАНЕЛЬ -->
-        <aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col shadow-2xl z-20">
-            <div class="flex items-center gap-4 mb-10">
-                <div class="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fas fa-project-diagram text-white text-xl"></i>
+<body class="bg-slate-50 text-slate-900 font-sans antialiased">
+    <div id="app" v-cloak class="min-h-screen flex">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-xl z-20 hidden md:flex">
+            <div class="p-6 border-b border-slate-800 flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-layer-group text-xl text-white"></i>
                 </div>
-                <div>
-                    <h1 class="text-white font-black text-xl leading-none uppercase tracking-tighter italic">Artwell</h1>
-                    <p id="role-label" class="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mt-1 italic">Подрядчик</p>
-                </div>
+                <span class="font-bold text-lg tracking-tight">ARTWELL <span class="text-blue-400">XML</span></span>
             </div>
             
-            <div class="space-y-8 flex-1 overflow-y-auto custom-scrollbar">
-                <div>
-                    <div class="flex justify-between items-center mb-4 px-2">
-                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">Директории</p>
-                        <button onclick="addFolder()" id="add-folder-btn" class="w-6 h-6 bg-slate-800 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center transition">
-                            <i class="fas fa-plus text-[10px]"></i>
-                        </button>
-                    </div>
-                    <nav id="folder-list" class="space-y-1"></nav>
-                </div>
-            </div>
+            <nav class="flex-1 p-4 space-y-2 mt-4">
+                <button @click="currentTab = 'registry'" :class="navClass('registry')">
+                    <i class="fas fa-list-ul w-6"></i> Реестр документов
+                </button>
+                <button @click="currentTab = 'upload'" v-if="role === 'contractor'" :class="navClass('upload')">
+                    <i class="fas fa-file-upload w-6"></i> Загрузка XML
+                </button>
+                <button @click="currentTab = 'audit'" :class="navClass('audit')">
+                    <i class="fas fa-history w-6"></i> Аудит-лог
+                </button>
+            </nav>
 
-            <!-- ПЕРЕКЛЮЧАТЕЛЬ РОЛЕЙ -->
-            <div class="mt-auto p-5 bg-slate-900/50 rounded-[2.5rem] border border-slate-800">
-                <div class="flex gap-2 p-1 bg-slate-950 rounded-2xl border border-slate-800">
-                    <button onclick="changeRole('contractor')" id="btn-role-cont" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase bg-blue-600 text-white">Подрядчик</button>
-                    <button onclick="changeRole('client')" id="btn-role-clie" class="flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase text-slate-500">Заказчик</button>
-                </div>
+            <div class="p-6 border-t border-slate-800 bg-slate-950/50">
+                <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Ваша роль</label>
+                <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    <option value="contractor">👷 Подрядчик</option>
+                    <option value="client">🕵️ Заказчик</option>
+                </select>
             </div>
         </aside>
 
-        <!-- ГЛАВНЫЙ КОНТЕНТ -->
-        <main class="flex-1 flex flex-col bg-gradient-to-br from-[#020617] to-[#0f172a]">
-            <header class="h-24 px-10 flex items-center justify-between border-b border-slate-800 bg-[#020617]/50 backdrop-blur-xl">
-                <div>
-                    <p class="text-[9px] font-black text-slate-500 uppercase mb-1 tracking-[0.2em] italic font-serif">Registry v2.0</p>
-                    <h2 id="current-title" class="text-2xl font-black text-white uppercase tracking-tight italic">Все документы</h2>
-                </div>
-                <div id="contractor-actions">
-                    <button onclick="addNewFile()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl flex items-center gap-3">
-                        <i class="fas fa-plus"></i> НОВЫЙ ФАЙЛ
-                    </button>
+        <!-- MAIN AREA -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden w-full">
+            <!-- Top Nav -->
+            <header class="h-16 bg-white border-b flex items-center justify-between px-8 shadow-sm shrink-0">
+                <h2 class="text-lg font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs font-bold text-slate-800">Анна (Верифай)</p>
+                        <p class="text-[10px] text-slate-400">Разработчик интерфейса</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-blue-400 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-white">A</div>
                 </div>
             </header>
 
-            <div id="file-registry" class="flex-1 p-10 overflow-y-auto custom-scrollbar space-y-4"></div>
-        </main>
-    </div>
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-8">
+                
+                <!-- TAB: REGISTRY -->
+                <section v-if="currentTab === 'registry'" class="animate-fade-in">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <span class="text-xs font-bold text-slate-500 uppercase">Всего документов: {{ documents.length }}</span>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="text" v-model="searchQuery" placeholder="Поиск..." class="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 transition w-48">
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200">
+                                        <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Документ / Дата</th>
+                                        <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Статус валидации</th>
+                                        <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-center">Версия</th>
+                                        <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-right">Действие</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="doc in filteredDocuments" :key="doc.id" class="hover:bg-blue-50/30 transition-colors group">
+                                        <td class="p-4">
+                                            <div class="font-bold text-slate-800 group-hover:text-blue-600 transition">{{ doc.number }}</div>
+                                            <div class="text-[11px] text-slate-400 font-medium">{{ doc.updatedAt }}</div>
+                                        </td>
+                                        <td class="p-4">
+                                            <span :class="statusBadge(doc.status)">{{ statusText(doc.status) }}</span>
+                                        </td>
+                                        <td class="p-4 text-center">
+                                            <span class="bg-slate-100 px-2 py-0.5 rounded text-xs font-bold text-slate-600">v{{ doc.version }}</span>
+                                        </td>
+                                        <td class="p-4 text-right">
+                                            <button @click="openModal(doc)" class="text-xs font-bold text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-600 px-4 py-1.5 rounded-lg transition">КАРТОЧКА</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredDocuments.length === 0">
+                                        <td colspan="4" class="p-8 text-center text-slate-400 text-sm">Документы не найдены</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
 
-    <!-- МОДАЛЬНОЕ ОКНО РЕДАКТОРА -->
-    <div id="modal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-2xl">
-        <div class="bg-[#0f172a] w-full max-w-7xl h-[90vh] rounded-[3.5rem] border border-slate-700 shadow-2xl flex flex-col overflow-hidden animate-up">
-            <div class="p-8 border-b border-slate-800 flex justify-between items-center">
-                <input id="modal-name" type="text" class="bg-transparent text-2xl font-black text-white italic uppercase outline-none focus:border-b border-blue-500 flex-1 mr-10">
-                <button onclick="closeModal()" class="text-4xl text-slate-500 hover:text-white">&times;</button>
+                <!-- TAB: UPLOAD -->
+                <section v-if="currentTab === 'upload'" class="max-w-2xl mx-auto py-12">
+                    <div @click="triggerUpload" class="border-4 border-dashed border-slate-200 bg-white rounded-3xl p-16 text-center hover:border-blue-500 hover:bg-blue-50/50 transition cursor-pointer group shadow-sm relative overflow-hidden">
+                        <input type="file" ref="fileInput" @change="handleFile" class="hidden" accept=".xml">
+                        
+                        <div class="absolute inset-0 bg-gradient-to-tr from-blue-50/0 to-blue-50/50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="w-20 h-20 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:rotate-6 transition-transform shadow-inner">
+                                <i class="fas fa-cloud-upload-alt text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-black text-slate-800 mb-2 tracking-tight">Загрузить XML-документ</h3>
+                            <p class="text-slate-500 text-sm max-w-xs mx-auto">Система автоматически проверит файл на соответствие XSD-схемам Минстроя</p>
+                            <div class="mt-8 inline-block bg-slate-900 text-white px-8 py-3 rounded-xl font-bold hover:scale-105 transition active:scale-95 shadow-lg shadow-slate-900/20">Выбрать файл</div>
+                            <p class="mt-4 text-[10px] text-slate-400 uppercase font-bold">Поддерживаются файлы .xml до 50МБ</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB: AUDIT LOG -->
+                <section v-if="currentTab === 'audit'" class="space-y-3 max-w-4xl mx-auto">
+                    <div v-for="log in auditLogs" :key="log.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4 hover:shadow-md transition animate-slide-in">
+                        <div :class="logIconClass(log.type)" class="shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-lg">
+                            <i :class="logIcon(log.type)"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-bold text-slate-800 leading-tight">{{ log.message }}</p>
+                            <p class="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">{{ log.user }} • {{ log.time }}</p>
+                        </div>
+                    </div>
+                </section>
+
             </div>
-            <div class="flex-1 flex">
-                <div id="editor-zone" class="flex-1 bg-black"></div>
-                <div class="w-80 p-8 border-l border-slate-800 space-y-6">
-                    <label class="text-[10px] font-black text-slate-500 uppercase block tracking-widest">Статус</label>
-                    <select id="modal-status" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white font-bold outline-none">
-                        <option value="новый">⚪ Новый</option>
-                        <option value="в разработке">🟡 В разработке</option>
-                        <option value="готов">🟢 Готов</option>
-                    </select>
-                    <div class="pt-10 space-y-3">
-                        <button id="save-btn" onclick="saveFile()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-5 rounded-2xl font-black text-[10px] uppercase">Сохранить</button>
-                        <button onclick="closeModal()" class="w-full bg-slate-800 text-white p-5 rounded-2xl font-black text-[10px] uppercase">Закрыть</button>
+        </main>
+
+        <!-- MODAL: DOCUMENT DETAILS -->
+        <transition name="modal">
+            <div v-if="selectedDoc" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeModal" @keydown.escape="closeModal" tabindex="-1">
+                <!-- Overlay -->
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+                
+                <!-- Card -->
+                <div class="modal-card relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                    <div class="p-6 bg-slate-50 border-b flex justify-between items-start shrink-0">
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800 leading-none">{{ selectedDoc.number }}</h3>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Просмотр исполнительной документации</p>
+                        </div>
+                        <button @click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-8 overflow-y-auto">
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Текущий статус</label>
+                                <span :class="statusBadge(selectedDoc.status)" class="text-xs py-1.5 px-4 font-bold inline-flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="statusDotClass(selectedDoc.status)"></span>
+                                    {{ statusText(selectedDoc.status) }}
+                                </span>
+                            </div>
+                            
+                            <div v-if="selectedDoc.status === 'invalid'" class="p-4 bg-rose-50 rounded-2xl border border-rose-100">
+                                <p class="text-[10px] uppercase font-black text-rose-400 mb-2">Обнаружены ошибки XSD</p>
+                                <p class="text-xs text-rose-700 font-bold leading-relaxed italic">Линия 42: Элемент '&lt;Contractor&gt;' не соответствует схеме Минстроя России.</p>
+                            </div>
+                            <div v-else-if="selectedDoc.status === 'processing'" class="p-4 bg-amber-50 rounded-2xl border border-amber-100 animate-pulse">
+                                <p class="text-[10px] uppercase font-black text-amber-400 mb-2">Идет обработка...</p>
+                                <p class="text-xs text-amber-700 font-bold leading-relaxed">Пожалуйста, подождите, выполняется проверка схемы.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Объект строительства</label>
+                                <p class="text-sm font-bold text-slate-800 italic">ЖК «Артвелл Парк», корпус 2</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex flex-col">
+                            <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2 shrink-0">
+                                <i class="fas fa-history text-blue-500"></i> История версий
+                            </h4>
+                            <div class="space-y-2 overflow-y-auto flex-1 pr-2">
+                                <div v-for="i in selectedDoc.version" :key="i" class="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm border border-slate-100 group hover:border-blue-300 transition cursor-pointer">
+                                    <span class="text-xs font-bold text-slate-700">v{{ i }}.0</span>
+                                    <i class="fas fa-download text-[10px] text-blue-500 group-hover:scale-125 transition"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
+                        <button @click="closeModal" class="bg-slate-900 text-white px-8 py-3 rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">Закрыть</button>
                     </div>
                 </div>
             </div>
-        </div>
+        </transition>
     </div>
 
     <script>
-        // ДАННЫЕ
-        let state = {
-            role: 'contractor',
-            currentDir: null,
-            folders: [{id: 1, name: 'Спецификации'}, {id: 2, name: 'Код проекта'}],
-            files: [
-                {id: 1, dir: 1, name: 'Расчеты.xlsx', type: 'sheet', content: [["Параметр", "Значение"], ["Бюджет", "1.5M"], ["Срок", "6 мес"]], status: 'готов'},
-                {id: 2, dir: 2, name: 'Main.js', type: 'code', content: 'console.log("System Start");', status: 'в разработке'}
-            ]
-        };
+        const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
-        let currentFileId = null;
-        let hot = null; // Инстанс таблиц
-        let monacoEditor = null; // Инстанс кода
+        createApp({
+            setup() {
+                const role = ref('contractor');
+                const currentTab = ref('registry');
+                const selectedDoc = ref(null);
+                const searchQuery = ref('');
+                const fileInput = ref(null);
+                
+                // Добавили ID для ключей списков (лучшая практика Vue)
+                let docIdCounter = 4;
+                let logIdCounter = 4;
 
-        require.config({ paths: { vs: 'https://cdnjs.cloudflare.com' }});
+                const documents = ref([
+                    { id: 1, number: 'АКТ-001/2026', status: 'valid', version: 2, updatedAt: '26.03.2026 14:00' },
+                    { id: 2, number: 'ЖУР-БЕТ-042', status: 'invalid', version: 1, updatedAt: '25.03.2026 09:15' },
+                    { id: 3, number: 'ПРЕДПИС-12-А', status: 'valid', version: 1, updatedAt: '24.03.2026 18:30' }
+                ]);
 
-        function render() {
-            // Рендер папок
-            const fl = document.getElementById('folder-list');
-            fl.innerHTML = state.folders.map(f => `
-                <div onclick="selectDir(${f.id})" class="p-4 rounded-2xl cursor-pointer transition ${state.currentDir === f.id ? 'bg-blue-600/10 border border-blue-500/20' : 'hover:bg-slate-800/50'}">
-                    <span class="text-[11px] font-black uppercase ${state.currentDir === f.id ? 'text-blue-500' : 'text-slate-400'}">${f.name}</span>
-                </div>
-            `).join('');
+                const auditLogs = ref([
+                    { id: 1, type: 'upload', user: 'Анна (Подрядчик)', message: 'Успешная загрузка XML: АКТ-001/2026', time: 'Сегодня 14:00' },
+                    { id: 2, type: 'error', user: 'XSD Валидатор', message: 'Ошибка схемы в файле ЖУР-БЕТ-042', time: 'Вчера 09:15' },
+                    { id: 3, type: 'view', user: 'Менеджер Артвелл (Заказчик)', message: 'Просмотр документа ПРЕДПИС-12-А', time: '24.03.2026' }
+                ]);
 
-            // Рендер файлов
-            const fr = document.getElementById('file-registry');
-            const list = state.currentDir ? state.files.filter(f => f.dir === state.currentDir) : state.files;
-            fr.innerHTML = list.map(f => `
-                <div class="bg-slate-900/40 border border-slate-800 p-6 rounded-[2rem] flex items-center justify-between">
-                    <div class="flex items-center gap-6">
-                        <i class="fas ${f.type === 'sheet' ? 'fa-table' : 'fa-file-code'} text-blue-500 text-2xl"></i>
-                        <div><h4 class="text-white font-black uppercase italic">${f.name}</h4><span class="text-[9px] uppercase text-slate-500">${f.status}</span></div>
-                    </div>
-                    <button onclick="editFile(${f.id})" class="px-8 py-3 bg-slate-800 hover:bg-white hover:text-black rounded-xl text-[10px] font-black uppercase transition-all">Открыть</button>
-                </div>
-            `).join('');
-
-            // Роли
-            const isClient = state.role === 'client';
-            document.getElementById('contractor-actions').style.display = isClient ? 'none' : 'block';
-            document.getElementById('add-folder-btn').style.display = isClient ? 'none' : 'flex';
-            document.getElementById('role-label').innerText = isClient ? 'Заказчик' : 'Подрядчик';
-            document.getElementById('role-label').style.color = isClient ? '#10b981' : '#3b82f6';
-        }
-
-        function changeRole(role) {
-            state.role = role;
-            document.getElementById('btn-role-cont').className = role === 'contractor' ? "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase bg-blue-600 text-white" : "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase text-slate-500";
-            document.getElementById('btn-role-clie').className = role === 'client' ? "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase bg-emerald-600 text-white" : "flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all uppercase text-slate-500";
-            render();
-        }
-
-        function editFile(id) {
-            const file = state.files.find(f => f.id === id);
-            currentFileId = id;
-            const zone = document.getElementById('editor-zone');
-            zone.innerHTML = '';
-            document.getElementById('modal').style.display = 'flex';
-            document.getElementById('modal-name').value = file.name;
-            document.getElementById('modal-status').value = file.status;
-
-            const isRead = state.role === 'client';
-            document.getElementById('save-btn').style.display = isRead ? 'none' : 'block';
-            document.getElementById('modal-name').readOnly = isRead;
-
-            if(file.type === 'sheet') {
-                hot = new Handsontable(zone, {
-                    data: JSON.parse(JSON.stringify(file.content)),
-                    rowHeaders: true, colHeaders: true, height: '100%', width: '100%',
-                    licenseKey: 'non-commercial-and-evaluation',
-                    readOnly: isRead, stretchH: 'all'
+                const currentTabName = computed(() => {
+                    const titles = { registry: 'Реестр документации', upload: 'Новая загрузка', audit: 'Журнал событий' };
+                    return titles[currentTab.value];
                 });
-            } else {
-                require(['vs/editor/editor.main'], function() {
-                    monacoEditor = monaco.editor.create(zone, {
-                        value: file.content,
-                        language: file.name.endsWith('.js') ? 'javascript' : 'plaintext',
-                        theme: 'vs-dark',
-                        readOnly: isRead,
-                        automaticLayout: true
+
+                const filteredDocuments = computed(() => {
+                    if (!searchQuery.value) return documents.value;
+                    const query = searchQuery.value.toLowerCase();
+                    return documents.value.filter(doc => 
+                        doc.number.toLowerCase().includes(query)
+                    );
+                });
+
+                // Обработчик клавиатуры для глобального закрытия модалки
+                const handleKeydown = (e) => {
+                    if (e.key === 'Escape' && selectedDoc.value) {
+                        closeModal();
+                    }
+                };
+
+                onMounted(() => {
+                    window.addEventListener('keydown', handleKeydown);
+                });
+                onUnmounted(() => {
+                    window.removeEventListener('keydown', handleKeydown);
+                });
+
+                const openModal = (doc) => {
+                    selectedDoc.value = doc;
+                    // Блокируем скролл фона
+                    document.body.style.overflow = 'hidden';
+                };
+                
+                const closeModal = () => {
+                    selectedDoc.value = null;
+                    document.body.style.overflow = '';
+                };
+
+                const statusBadge = (s) => {
+                    const base = "px-3 py-1 rounded-xl text-[10px] font-black tracking-tighter uppercase inline-flex items-center gap-1.5 ";
+                    if (s === 'valid') return base + "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                    if (s === 'invalid') return base + "bg-rose-50 text-rose-600 border border-rose-200";
+                    return base + "bg-amber-50 text-amber-600 border border-amber-200";
+                };
+                
+                const statusDotClass = (s) => {
+                    if (s === 'valid') return "bg-emerald-500";
+                    if (s === 'invalid') return "bg-rose-500";
+                    return "bg-amber-500 animate-ping";
+                };
+
+                const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка XSD', processing: 'Анализ...' }[s]);
+
+                const navClass = (tab) => `w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all duration-300 ${currentTab.value === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 translate-x-1' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`;
+
+                const logIconClass = (t) => {
+                    const s = { upload: 'bg-blue-50 text-blue-600', error: 'bg-rose-50 text-rose-600', view: 'bg-indigo-50 text-indigo-600' };
+                    return s[t] + " ring-1 ring-inset ring-black/5";
+                };
+
+                const logIcon = (t) => ({ upload: 'fas fa-arrow-up', error: 'fas fa-bug', view: 'fas fa-eye' }[t]);
+
+                // ИСПРАВЛЕНО: Используем реф, а не querySelector
+                const triggerUpload = () => {
+                    if (fileInput.value) {
+                        fileInput.value.click();
+                    }
+                };
+
+                const handleFile = (e) => {
+                    if (!e.target.files.length) return;
+                    const file = e.target.files[0];
+                    
+                    // Простая валидация размера
+                    if (file.size > 50 * 1024 * 1024) {
+                        alert('Файл слишком большой (макс. 50МБ)');
+                        return;
+                    }
+
+                    const name = file.name.replace('.xml', '').toUpperCase();
+                    const newDoc = { id: docIdCounter++, number: name, status: 'processing', version: 1, updatedAt: 'Только что' };
+                    
+                    documents.value.unshift(newDoc);
+                    currentTab.value = 'registry';
+                    
+                    auditLogs.value.unshift({ 
+                        id: logIdCounter++, 
+                        type: 'upload', 
+                        user: 'Анна', 
+                        message: `Файл ${file.name} отправлен на валидацию`, 
+                        time: 'Только что' 
                     });
-                });
+
+                    // Сброс инпута, чтобы можно было загрузить тот же файл снова
+                    e.target.value = '';
+
+                    // Эмуляция задержки сети и валидации
+                    setTimeout(() => {
+                        const docIndex = documents.value.findIndex(d => d.id === newDoc.id);
+                        if (docIndex !== -1) {
+                            // 70% шанс на успех для демо
+                            const isSuccess = Math.random() > 0.3;
+                            documents.value[docIndex].status = isSuccess ? 'valid' : 'invalid';
+                            documents.value[docIndex].updatedAt = new Date().toLocaleString('ru-RU');
+                            
+                            if (!isSuccess) {
+                                auditLogs.value.unshift({ 
+                                    id: logIdCounter++, 
+                                    type: 'error', 
+                                    user: 'Система', 
+                                    message: `Валидация ${name} провалена`, 
+                                    time: 'Только что' 
+                                });
+                            } else {
+                                auditLogs.value.unshift({ 
+                                    id: logIdCounter++, 
+                                    type: 'upload', 
+                                    user: 'Система', 
+                                    message: `Валидация ${name} успешна`, 
+                                    time: 'Только что' 
+                                });
+                            }
+                        }
+                    }, 2000);
+                };
+
+                return { 
+                    role, currentTab, currentTabName, documents, auditLogs, selectedDoc, searchQuery, filteredDocuments, fileInput,
+                    openModal, closeModal, statusBadge, statusText, navClass, logIcon, logIconClass, statusDotClass,
+                    triggerUpload, handleFile 
+                };
             }
-        }
-
-        function saveFile() {
-            const file = state.files.find(f => f.id === currentFileId);
-            file.name = document.getElementById('modal-name').value;
-            file.status = document.getElementById('modal-status').value;
-            if(hot) file.content = hot.getData();
-            if(monacoEditor) file.content = monacoEditor.getValue();
-            closeModal();
-            render();
-        }
-
-        function closeModal() {
-            document.getElementById('modal').style.display = 'none';
-            if(hot) { hot.destroy(); hot = null; }
-            if(monacoEditor) { monacoEditor.dispose(); monacoEditor = null; }
-        }
-
-        function addNewFile() {
-            const name = prompt("Назовите файл (.xlsx для таблиц):");
-            if(!name) return;
-            state.files.push({
-                id: Date.now(), dir: state.currentDir || 1, name,
-                type: name.endsWith('.xlsx') ? 'sheet' : 'code',
-                content: name.endsWith('.xlsx') ? [["",""],["",""]] : "",
-                status: 'новый'
-            });
-            render();
-        }
-
-        function addFolder() {
-            const name = prompt("Название папки:");
-            if(name) { state.folders.push({id: Date.now(), name}); render(); }
-        }
-
-        function selectDir(id) {
-            state.currentDir = (state.currentDir === id) ? null : id;
-            document.getElementById('current-title').innerText = state.currentDir ? state.folders.find(f => f.id === id).name : "Все документы";
-            render();
-        }
-
-        render();
+        }).mount('#app');
     </script>
 </body>
 </html>
