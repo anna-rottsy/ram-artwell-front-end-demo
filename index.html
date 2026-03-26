@@ -26,6 +26,20 @@
         .project-item { transition: all 0.15s ease; }
         .project-item:hover { transform: translateX(2px); }
         .project-item.active { border-left: 3px solid #3b82f6; padding-left: 13px; margin-left: -3px; }
+        
+        /* Анимация пульсации для новой версии */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .pulse-ring::before {
+            content: '';
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
@@ -52,7 +66,7 @@
                 </button>
                 <button @click="currentTab = 'upload'" v-if="role === 'contractor'" 
                         :class="navClass('upload', selectedProject !== 'all')">
-                    <i class="fas fa-file-upload w-5"></i> Загрузка XML
+                    <i class="fas fa-cloud-upload-alt w-5"></i> Загрузка файлов
                 </button>
                 <button @click="currentTab = 'audit'" :class="navClass('audit')">
                     <i class="fas fa-history w-5"></i> Аудит-лог
@@ -60,14 +74,23 @@
             </nav>
 
             <!-- Projects Section -->
-            <div class="px-4 mt-2">
+            <div class="px-4 mt-2 flex-1 overflow-y-auto">
                 <div class="flex items-center justify-between mb-3 px-1">
                     <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Проекты</span>
-                    <button @click="selectProject('all')" 
-                            v-if="selectedProject && selectedProject !== 'all'"
-                            class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition">
-                        Сбросить
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button v-if="selectedProject && selectedProject !== 'all'"
+                                @click="selectProject('all')"
+                                class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition">
+                            Сброс
+                        </button>
+                        <!-- КНОПКА СОЗДАНИЯ ПРОЕКТА (Только для подрядчика) -->
+                        <button v-if="role === 'contractor'" 
+                                @click="openNewProjectModal"
+                                class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition"
+                                title="Создать проект">
+                            <i class="fas fa-plus text-[10px]"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- All Projects Option -->
@@ -86,12 +109,11 @@
                 <!-- Project List -->
                 <div v-for="project in projects" :key="project.id"
                      @click="selectProject(project.id)"
-                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 relative group"
                      :class="selectedProject === project.id 
                         ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
                         : 'text-slate-400 hover:text-white hover:bg-slate-800'">
                     
-                    <!-- Project Avatar with Color -->
                     <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
                          :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
                         <span :style="{ color: project.color }">{{ project.icon }}</span>
@@ -99,8 +121,7 @@
                     
                     <span class="text-sm font-medium flex-1 truncate">{{ project.name }}</span>
                     
-                    <!-- Document Count Badge -->
-                    <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 transition-colors"
                           :class="getProjectBadgeClass(project.id)">
                         {{ getProjectDocsCount(project.id) }}
                     </span>
@@ -108,8 +129,7 @@
             </div>
 
             <!-- Bottom Section: User & Role -->
-            <div class="mt-auto p-4 border-t border-slate-800 bg-slate-950/30">
-                <!-- Current User -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950/30">
                 <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-800">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10" 
                          :style="{ backgroundColor: currentUser.color }">
@@ -121,7 +141,6 @@
                     </div>
                 </div>
                 
-                <!-- Role Selector -->
                 <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
                 <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
                     <option value="contractor">👷 Подрядчик</option>
@@ -135,14 +154,12 @@
             <!-- Top Nav -->
             <header class="h-14 bg-white border-b flex items-center justify-between px-5 shadow-sm shrink-0">
                 <div class="flex items-center gap-3">
-                    <!-- Mobile Menu Toggle -->
                     <button class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition">
                         <i class="fas fa-bars text-slate-600"></i>
                     </button>
                     
                     <h2 class="text-base font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
                     
-                    <!-- Active Project Indicator -->
                     <span v-if="selectedProject && selectedProject !== 'all'" 
                           class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                         <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getProjectColor(selectedProject) }"></span>
@@ -151,14 +168,12 @@
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <!-- Search (always visible) -->
                     <div v-if="currentTab === 'registry'" class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
                         <input type="text" v-model="searchQuery" placeholder="Поиск..." 
                                class="w-40 sm:w-56 pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
                     </div>
                     
-                    <!-- Mobile User Avatar -->
                     <button @click="toggleUserMenu" class="sm:hidden w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white" 
                             :style="{ backgroundColor: currentUser.color }">
                         {{ getInitials(currentUser) }}
@@ -166,7 +181,7 @@
                 </div>
             </header>
 
-            <!-- Mobile User Menu Dropdown -->
+            <!-- Mobile User Menu -->
             <transition name="fade">
                 <div v-if="showUserMenu" class="sm:hidden absolute right-4 top-14 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 w-48">
                     <div class="px-4 py-2 border-b border-slate-100">
@@ -190,13 +205,10 @@
                 
                 <!-- TAB: REGISTRY -->
                 <section v-if="currentTab === 'registry'" class="animate-fade-in">
-                    <!-- Secondary Filters Bar -->
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 flex flex-wrap gap-2 items-center">
                         <select v-model="filterResponsible" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
                             <option value="all">👤 Все ответственные</option>
-                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                                {{ emp.name }}
-                            </option>
+                            <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }}</option>
                         </select>
                         
                         <select v-model="filterStatus" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
@@ -205,20 +217,24 @@
                             <option value="invalid">❌ Ошибка</option>
                             <option value="processing">⏳ Анализ</option>
                         </select>
+
+                        <select v-model="filterType" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                            <option value="all">📄 Все типы</option>
+                            <option value="xml">XML Схема</option>
+                            <option value="pdf">PDF Документ</option>
+                            <option value="doc">Office Doc</option>
+                        </select>
                         
-                        <button v-if="filterResponsible !== 'all' || filterStatus !== 'all'"
-                                @click="filterResponsible = 'all'; filterStatus = 'all'"
-                                class="text-xs text-slate-500 hover:text-slate-700 font-medium px-2 py-1.5 transition">
-                            ✕ Сбросить фильтры
+                        <button v-if="hasActiveFilters" @click="resetFilters" class="text-xs text-slate-500 hover:text-slate-700 font-medium px-2 py-1.5 transition">
+                            ✕ Сброс
                         </button>
                     </div>
 
-                    <!-- Documents Table -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200">
-                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Документ</th>
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Файл / Тип</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black hidden sm:table-cell">Ответственный</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-center">Версия</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Статус</th>
@@ -230,8 +246,16 @@
                                     class="hover:bg-blue-50/30 transition-colors group cursor-pointer"
                                     @click="openModal(doc)">
                                     <td class="p-4">
-                                        <div class="font-bold text-slate-800 group-hover:text-blue-600 transition">{{ doc.number }}</div>
-                                        <div class="text-[11px] text-slate-400 font-medium mt-0.5">{{ formatDate(doc.updatedAt) }}</div>
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-xs shrink-0"
+                                                 :class="getFileIconClass(doc.fileType)">
+                                                <i :class="getFileIcon(doc.fileType)"></i>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-slate-800 group-hover:text-blue-600 transition">{{ doc.number }}</div>
+                                                <div class="text-[10px] text-slate-400 font-medium uppercase">{{ getFileTypeName(doc.fileType) }} • {{ formatDate(doc.updatedAt) }}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="p-4 hidden sm:table-cell">
                                         <div class="flex items-center gap-2">
@@ -261,7 +285,6 @@
                                             <i class="fas fa-folder-open text-slate-400 text-xl"></i>
                                         </div>
                                         <p class="text-sm font-medium text-slate-600">Документы не найдены</p>
-                                        <p class="text-[11px] text-slate-400 mt-1">Попробуйте изменить фильтры или загрузить новый документ</p>
                                         <button v-if="role === 'contractor'" @click="currentTab = 'upload'" 
                                                 class="mt-4 text-xs font-bold text-blue-600 hover:text-blue-700 transition">
                                             → Загрузить документ
@@ -286,66 +309,53 @@
                             </div>
                         </div>
                         
-                        <!-- Form Fields -->
                         <div class="grid grid-cols-1 gap-4 mb-6">
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Проект</label>
-                                <select v-model="uploadForm.projectId" 
-                                        class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
-                                    <option v-for="project in projects" :key="project.id" :value="project.id">
-                                        {{ project.name }}
-                                    </option>
+                                <select v-model="uploadForm.projectId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                    <option v-for="project in projects" :key="project.id" :value="project.id">{{ project.name }}</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Ответственный</label>
-                                <select v-model="uploadForm.responsibleId" 
-                                        class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
-                                    <option v-for="emp in employees" :key="emp.id" :value="emp.id">
-                                        {{ emp.name }} • {{ emp.role }}
-                                    </option>
+                                <select v-model="uploadForm.responsibleId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                    <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }} • {{ emp.role }}</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Комментарий</label>
-                                <input type="text" v-model="uploadForm.comment" 
-                                       placeholder="Описание изменений (необязательно)" 
-                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                <input type="text" v-model="uploadForm.comment" placeholder="Описание (необязательно)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
                             </div>
                         </div>
                         
                         <!-- Drop Zone -->
                         <div @click="triggerUpload" 
                              class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition cursor-pointer group">
-                            <input type="file" ref="fileInput" @change="handleFile" class="hidden" accept=".xml">
+                            <!-- Расширили accept на все популярные форматы -->
+                            <input type="file" ref="fileInput" @change="handleFile" class="hidden" accept=".xml,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg">
                             
                             <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform shadow-sm">
-                                <i class="fas fa-file-code text-blue-500 text-xl"></i>
+                                <i class="fas fa-file-import text-blue-500 text-xl"></i>
                             </div>
-                            <p class="text-sm font-bold text-slate-700 mb-1">Выберите XML-файл</p>
-                            <p class="text-[11px] text-slate-400">Макс. размер 50 МБ</p>
+                            <p class="text-sm font-bold text-slate-700 mb-1">Выберите файл</p>
+                            <p class="text-[11px] text-slate-400">XML, PDF, DOCX, XLSX (макс. 50 МБ)</p>
                             
-                            <!-- Selected File Preview -->
                             <div v-if="uploadForm.fileName" class="mt-4 p-3 bg-white rounded-lg border border-slate-200 flex items-center gap-2">
-                                <i class="fas fa-file-code text-blue-500 text-sm"></i>
+                                <i class="fas fa-file text-blue-500 text-sm"></i>
                                 <span class="text-xs font-medium text-slate-700 truncate">{{ uploadForm.fileName }}</span>
-                                <button @click.stop="uploadForm.fileName = ''; if(fileInput) fileInput.value = ''" 
-                                        class="ml-auto text-slate-400 hover:text-rose-500 transition">
+                                <span class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 uppercase">{{ uploadForm.fileType }}</span>
+                                <button @click.stop="resetUploadForm" class="ml-auto text-slate-400 hover:text-rose-500 transition">
                                     <i class="fas fa-times text-xs"></i>
                                 </button>
                             </div>
                         </div>
                         
-                        <!-- Actions -->
                         <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
-                            <button @click="resetUploadForm" 
-                                    class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition">
-                                Сбросить
-                            </button>
+                            <button @click="resetUploadForm" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 transition">Сбросить</button>
                             <button @click="submitUpload" :disabled="!canUpload || uploading" 
                                     class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-600/20 flex items-center gap-2">
                                 <i class="fas fa-spinner fa-spin" v-if="uploading"></i>
-                                {{ uploading ? 'Обработка...' : 'Загрузить' }}
+                                {{ uploading ? 'Проверка...' : 'Загрузить и проверить' }}
                             </button>
                         </div>
                     </div>
@@ -368,8 +378,7 @@
                                     </span>
                                     <span class="text-[10px] text-slate-300">•</span>
                                     <span class="text-[10px] text-slate-400">{{ formatTime(log.time) }}</span>
-                                    <span v-if="log.projectName" 
-                                          class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium text-slate-600">
+                                    <span v-if="log.projectName" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium text-slate-600">
                                         {{ log.projectName }}
                                     </span>
                                 </div>
@@ -403,17 +412,15 @@
                                 • Версия {{ selectedDoc.version }}.0
                             </p>
                         </div>
-                        <button @click="closeModal" 
-                                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0">
+                        <button @click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0">
                             <i class="fas fa-times text-lg"></i>
                         </button>
                     </div>
                     
                     <!-- Content -->
                     <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-y-auto">
-                        <!-- Left: Metadata -->
                         <div class="lg:col-span-2 space-y-5">
-                            <!-- Responsible Person -->
+                            <!-- Responsible -->
                             <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Ответственный</label>
                                 <div class="flex items-center gap-3">
@@ -428,14 +435,15 @@
                                 </div>
                             </div>
                             
-                            <!-- Validation Errors -->
+                            <!-- Validation Errors (Dynamic based on file type) -->
                             <div v-if="selectedDoc.status === 'invalid'" class="p-4 bg-rose-50 rounded-xl border border-rose-100">
                                 <p class="text-[10px] uppercase font-black text-rose-400 mb-2 flex items-center gap-2">
-                                    <i class="fas fa-triangle-exclamation"></i> Ошибки валидации
+                                    <i class="fas fa-triangle-exclamation"></i> Ошибки проверки
                                 </p>
                                 <ul class="text-xs text-rose-700 space-y-1.5">
-                                    <li class="flex gap-2"><span class="font-bold shrink-0">Линия 42:</span> Элемент '&lt;Contractor&gt;' не соответствует схеме Минстроя</li>
-                                    <li class="flex gap-2"><span class="font-bold shrink-0">Линия 89:</span> Отсутствует обязательный атрибут 'date'</li>
+                                    <li v-if="selectedDoc.fileType === 'xml'">❌ XSD Схема: Элемент '&lt;Contractor&gt;' не соответствует стандарту Минстроя.</li>
+                                    <li v-else-if="selectedDoc.fileType === 'pdf'">❌ Формат: Файл повреждён или защищён паролем.</li>
+                                    <li v-else>❌ Формат: Невозможно прочитать содержимое файла.</li>
                                 </ul>
                             </div>
                             
@@ -443,17 +451,16 @@
                                 <p class="text-[10px] uppercase font-black text-amber-400 mb-2 flex items-center gap-2">
                                     <i class="fas fa-spinner fa-spin"></i> Обработка
                                 </p>
-                                <p class="text-xs text-amber-700">Выполняется проверка соответствия XSD-схемам...</p>
+                                <p class="text-xs text-amber-700">Выполняется проверка файла на вирусы и соответствие формату...</p>
                             </div>
-                            
-                            <!-- Object Info -->
+
                             <div>
-                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Объект строительства</label>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Объект</label>
                                 <p class="text-sm font-bold text-slate-800">ЖК «Артвелл Парк», корпус 2</p>
                             </div>
                         </div>
 
-                        <!-- Right: Version History -->
+                        <!-- Version History -->
                         <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col">
                             <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2 shrink-0">
                                 <i class="fas fa-code-branch text-blue-500"></i> Версии
@@ -474,7 +481,7 @@
                                         <span class="text-[11px] font-medium text-slate-600">{{ getUserName(version.uploadedBy) }}</span>
                                     </div>
                                     <button class="mt-2.5 w-full text-[10px] font-bold text-blue-600 hover:bg-blue-50 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
-                                        <i class="fas fa-download"></i> Скачать XML
+                                        <i class="fas fa-download"></i> Скачать
                                     </button>
                                 </div>
                             </div>
@@ -488,14 +495,64 @@
                                 class="px-4 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-50 transition flex items-center gap-2">
                             <i class="fas fa-plus"></i> Новая версия
                         </button>
-                        <button @click="closeModal" 
-                                class="px-5 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
+                        <button @click="closeModal" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
                             Закрыть
                         </button>
                     </div>
                 </div>
             </div>
         </transition>
+
+        <!-- MODAL: NEW PROJECT -->
+        <transition name="modal">
+            <div v-if="showNewProjectModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4" @click.self="showNewProjectModal = false">
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+                <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-6 animate-fade-in">
+                    <h3 class="text-lg font-black text-slate-800 mb-4">Новый проект</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Название проекта *</label>
+                            <input v-model="newProjectForm.name" type="text" placeholder="Например: ЖК Солнечный" 
+                                   class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Цвет метки</label>
+                            <div class="flex gap-2">
+                                <button v-for="color in projectColors" :key="color" 
+                                        @click="newProjectForm.color = color"
+                                        class="w-8 h-8 rounded-full border-2 transition transform hover:scale-110"
+                                        :class="newProjectForm.color === color ? 'border-slate-900 scale-110' : 'border-transparent'"
+                                        :style="{ backgroundColor: color }">
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Иконка</label>
+                            <div class="flex gap-2 flex-wrap">
+                                <button v-for="icon in projectIcons" :key="icon"
+                                        @click="newProjectForm.icon = icon"
+                                        class="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-slate-100 transition"
+                                        :class="newProjectForm.icon === icon ? 'bg-blue-100 ring-2 ring-blue-500' : ''">
+                                    {{ icon }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button @click="showNewProjectModal = false" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">Отмена</button>
+                        <button @click="createProject" :disabled="!newProjectForm.name" 
+                                class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
+                            Создать проект
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
     </div>
 
     <script>
@@ -509,9 +566,10 @@
                 const selectedDoc = ref(null);
                 const showUserMenu = ref(false);
                 const uploading = ref(false);
-                const selectedProject = ref('all'); // 'all' or project ID
+                const selectedProject = ref('all');
+                const showNewProjectModal = ref(false);
                 
-                // === DATA: Projects with colors & icons ===
+                // === DATA: Projects ===
                 const projects = ref([
                     { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2', color: '#3b82f6', icon: '🏢' },
                     { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3', color: '#8b5cf6', icon: '🏗️' },
@@ -519,7 +577,6 @@
                     { id: 'infrastructure', name: 'Инфраструктура квартала', color: '#f59e0b', icon: '🛣️' }
                 ]);
                 
-                // === DATA: Employees ===
                 const employees = ref([
                     { id: 'anna', name: 'Анна Р.', role: 'Подрядчик', color: '#3b82f6' },
                     { id: 'mikhail', name: 'Михаил К.', role: 'Заказчик', color: '#8b5cf6' },
@@ -534,96 +591,82 @@
                     projectId: 'park-2',
                     responsibleId: 'anna',
                     comment: '',
-                    fileName: ''
+                    fileName: '',
+                    fileType: '' // 'xml', 'pdf', 'doc', etc.
                 });
+
+                // Form for new project
+                const newProjectForm = ref({
+                    name: '',
+                    color: '#3b82f6',
+                    icon: '🏢'
+                });
+                
+                const projectColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+                const projectIcons = ['🏢', '🏗️', '🏬', '🏭', '🛣️', '🌉', '🏡', '🏨'];
                 
                 // === Filters ===
                 const searchQuery = ref('');
                 const filterResponsible = ref('all');
                 const filterStatus = ref('all');
+                const filterType = ref('all'); // Новый фильтр по типу файла
                 
                 const fileInput = ref(null);
                 
-                // === Counters ===
                 let docIdCounter = 4;
                 let logIdCounter = 4;
                 let versionIdCounter = 4;
+                let projectIdCounter = 5;
 
                 // === Documents ===
                 const documents = ref([
                     { 
-                        id: 1, 
-                        number: 'АКТ-001/2026', 
-                        status: 'valid', 
-                        version: 2, 
-                        updatedAt: '2026-03-26T14:00:00',
-                        projectId: 'park-2',
-                        responsibleId: 'anna',
-                        versions: [
-                            { id: 1, number: 1, uploadedAt: '2026-03-20T10:00:00', uploadedBy: 'anna', comment: 'Первичная загрузка' },
-                            { id: 2, number: 2, uploadedAt: '2026-03-26T14:00:00', uploadedBy: 'anna', comment: 'Исправлены замечания' }
-                        ]
+                        id: 1, number: 'АКТ-001/2026', status: 'valid', version: 2, 
+                        updatedAt: '2026-03-26T14:00:00', projectId: 'park-2', responsibleId: 'anna',
+                        fileType: 'xml',
+                        versions: [{ id: 1, number: 1, uploadedAt: '2026-03-20T10:00:00', uploadedBy: 'anna', comment: 'Первичная загрузка' }]
                     },
                     { 
-                        id: 2, 
-                        number: 'ЖУР-БЕТ-042', 
-                        status: 'invalid', 
-                        version: 1, 
-                        updatedAt: '2026-03-25T09:15:00',
-                        projectId: 'park-2',
-                        responsibleId: 'elena',
-                        versions: [
-                            { id: 3, number: 1, uploadedAt: '2026-03-25T09:15:00', uploadedBy: 'elena', comment: 'Журнал бетонных работ' }
-                        ]
+                        id: 2, number: 'Смета_Март.pdf', status: 'valid', version: 1, 
+                        updatedAt: '2026-03-25T09:15:00', projectId: 'park-2', responsibleId: 'elena',
+                        fileType: 'pdf',
+                        versions: [{ id: 3, number: 1, uploadedAt: '2026-03-25T09:15:00', uploadedBy: 'elena', comment: 'Смета на материалы' }]
                     },
                     { 
-                        id: 3, 
-                        number: 'ПРЕДПИС-12-А', 
-                        status: 'valid', 
-                        version: 1, 
-                        updatedAt: '2026-03-24T18:30:00',
-                        projectId: 'business-center',
-                        responsibleId: 'mikhail',
-                        versions: [
-                            { id: 4, number: 1, uploadedAt: '2026-03-24T18:30:00', uploadedBy: 'mikhail', comment: 'Предписание по электромонтажу' }
-                        ]
+                        id: 3, number: 'ПРЕДПИС-12-А.docx', status: 'invalid', version: 1, 
+                        updatedAt: '2026-03-24T18:30:00', projectId: 'business-center', responsibleId: 'mikhail',
+                        fileType: 'doc',
+                        versions: [{ id: 4, number: 1, uploadedAt: '2026-03-24T18:30:00', uploadedBy: 'mikhail', comment: 'Предписание' }]
                     }
                 ]);
 
                 const auditLogs = ref([
-                    { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', message: 'Загружен: АКТ-001/2026 (v2.0)', time: '2026-03-26T14:00:00' },
-                    { id: 2, type: 'error', userId: 'system', projectId: 'park-2', message: 'Ошибка валидации: ЖУР-БЕТ-042', time: '2026-03-25T09:15:00' },
-                    { id: 3, type: 'view', userId: 'mikhail', projectId: 'business-center', message: 'Просмотр: ПРЕДПИС-12-А', time: '2026-03-24T18:30:00' }
+                    { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', message: 'Загружен: АКТ-001/2026 (XML)', time: '2026-03-26T14:00:00' },
+                    { id: 2, type: 'upload', userId: 'elena', projectId: 'park-2', message: 'Загружен: Смета_Март.pdf', time: '2026-03-25T09:15:00' },
+                    { id: 3, type: 'error', userId: 'system', projectId: 'business-center', message: 'Ошибка формата: ПРЕДПИС-12-А.docx', time: '2026-03-24T18:30:00' }
                 ]);
 
                 // === COMPUTED ===
                 const currentTabName = computed(() => ({
-                    registry: 'Реестр документации',
-                    upload: 'Новая загрузка', 
-                    audit: 'Журнал событий'
+                    registry: 'Реестр документации', upload: 'Загрузка файлов', audit: 'Журнал событий'
                 }[currentTab.value]));
 
                 const totalDocsCount = computed(() => documents.value.length);
 
+                const hasActiveFilters = computed(() => 
+                    filterResponsible.value !== 'all' || filterStatus.value !== 'all' || filterType.value !== 'all'
+                );
+
                 const filteredDocuments = computed(() => {
                     let result = [...documents.value];
                     
-                    // Project filter from sidebar
                     if (selectedProject.value && selectedProject.value !== 'all') {
                         result = result.filter(d => d.projectId === selectedProject.value);
                     }
+                    if (filterResponsible.value !== 'all') result = result.filter(d => d.responsibleId === filterResponsible.value);
+                    if (filterStatus.value !== 'all') result = result.filter(d => d.status === filterStatus.value);
+                    if (filterType.value !== 'all') result = result.filter(d => d.fileType === filterType.value);
                     
-                    // Responsible filter
-                    if (filterResponsible.value !== 'all') {
-                        result = result.filter(d => d.responsibleId === filterResponsible.value);
-                    }
-                    
-                    // Status filter
-                    if (filterStatus.value !== 'all') {
-                        result = result.filter(d => d.status === filterStatus.value);
-                    }
-                    
-                    // Search
                     if (searchQuery.value) {
                         const q = searchQuery.value.toLowerCase();
                         result = result.filter(d => d.number.toLowerCase().includes(q));
@@ -641,9 +684,7 @@
                 });
 
                 const canUpload = computed(() => 
-                    uploadForm.value.projectId && 
-                    uploadForm.value.responsibleId && 
-                    uploadForm.value.fileName
+                    uploadForm.value.projectId && uploadForm.value.responsibleId && uploadForm.value.fileName
                 );
 
                 // === HELPERS ===
@@ -659,24 +700,41 @@
                     return user ? getInitials(user) : '?';
                 };
 
-                const getProjectDocsCount = (projectId) => {
-                    return documents.value.filter(d => d.projectId === projectId).length;
-                };
+                const getProjectDocsCount = (projectId) => documents.value.filter(d => d.projectId === projectId).length;
 
                 const getProjectBadgeClass = (projectId) => {
                     const count = getProjectDocsCount(projectId);
                     const base = 'font-medium shrink-0 ';
                     if (count === 0) return base + 'bg-slate-700 text-slate-300';
                     const project = projects.value.find(p => p.id === projectId);
-                    return base + `bg-[${project?.color}20] text-[${project?.color}]`;
+                    // Используем inline style для цвета бейджа, так как динамический класс в Tailwind сложен
+                    return base; 
+                };
+
+                const getFileIcon = (type) => {
+                    const icons = { xml: 'fas fa-code', pdf: 'fas fa-file-pdf', doc: 'fas fa-file-word', xls: 'fas fa-file-excel', img: 'fas fa-file-image' };
+                    return icons[type] || 'fas fa-file';
+                };
+
+                const getFileIconClass = (type) => {
+                    const classes = { 
+                        xml: 'bg-blue-100 text-blue-600', 
+                        pdf: 'bg-red-100 text-red-600', 
+                        doc: 'bg-blue-100 text-blue-700', 
+                        xls: 'bg-green-100 text-green-700',
+                        img: 'bg-purple-100 text-purple-600'
+                    };
+                    return classes[type] || 'bg-slate-100 text-slate-600';
+                };
+
+                const getFileTypeName = (type) => {
+                    const names = { xml: 'XML Схема', pdf: 'PDF Документ', doc: 'Word Doc', xls: 'Excel Sheet', img: 'Изображение' };
+                    return names[type] || 'Файл';
                 };
 
                 const formatDate = (isoString) => {
                     if (!isoString) return '—';
-                    return new Date(isoString).toLocaleString('ru-RU', { 
-                        day: '2-digit', month: '2-digit', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit' 
-                    }).replace(',', '');
+                    return new Date(isoString).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
                 };
 
                 const formatTime = (isoString) => {
@@ -684,68 +742,77 @@
                     const date = new Date(isoString);
                     const now = new Date();
                     const isToday = date.toDateString() === now.toDateString();
-                    
-                    if (isToday) {
-                        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                    }
-                    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+                    return isToday ? date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
                 };
 
                 const statusBadge = (s) => {
                     const base = "px-2.5 py-1 rounded-lg text-[10px] font-black tracking-tighter uppercase inline-flex items-center gap-1 ";
-                    const styles = {
-                        valid: "bg-emerald-50 text-emerald-600 border border-emerald-200",
-                        invalid: "bg-rose-50 text-rose-600 border border-rose-200", 
-                        processing: "bg-amber-50 text-amber-600 border border-amber-200"
-                    };
+                    const styles = { valid: "bg-emerald-50 text-emerald-600 border border-emerald-200", invalid: "bg-rose-50 text-rose-600 border border-rose-200", processing: "bg-amber-50 text-amber-600 border border-amber-200" };
                     return base + (styles[s] || styles.processing);
                 };
 
-                const statusText = (s) => ({ 
-                    valid: 'Валиден', 
-                    invalid: 'Ошибка XSD', 
-                    processing: 'Анализ...' 
-                }[s]);
+                const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка', processing: 'Анализ...' }[s]);
 
                 const navClass = (tab, isActive) => {
                     const base = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ";
-                    if (currentTab.value === tab) {
-                        return base + "bg-blue-600 text-white shadow-lg shadow-blue-600/25";
-                    }
+                    if (currentTab.value === tab) return base + "bg-blue-600 text-white shadow-lg shadow-blue-600/25";
                     return base + "text-slate-400 hover:text-white hover:bg-slate-800";
                 };
 
-                const logIconClass = (t) => ({
-                    upload: 'bg-blue-50 text-blue-600',
-                    error: 'bg-rose-50 text-rose-600',
-                    view: 'bg-indigo-50 text-indigo-600'
-                }[t]);
+                const logIconClass = (t) => ({ upload: 'bg-blue-50 text-blue-600', error: 'bg-rose-50 text-rose-600', view: 'bg-indigo-50 text-indigo-600' }[t]);
+                const logIcon = (t) => ({ upload: 'fas fa-arrow-up', error: 'fas fa-triangle-exclamation', view: 'fas fa-eye' }[t]);
 
-                const logIcon = (t) => ({
-                    upload: 'fas fa-arrow-up',
-                    error: 'fas fa-triangle-exclamation',
-                    view: 'fas fa-eye'
-                }[t]);
-
-                // === PROJECT SELECTION ===
+                // === ACTIONS ===
                 const selectProject = (projectId) => {
                     selectedProject.value = projectId;
-                    if (currentTab.value !== 'registry') {
-                        currentTab.value = 'registry';
+                    if (currentTab.value !== 'registry') currentTab.value = 'registry';
+                };
+
+                const resetFilters = () => {
+                    filterResponsible.value = 'all';
+                    filterStatus.value = 'all';
+                    filterType.value = 'all';
+                    searchQuery.value = '';
+                };
+
+                const openNewProjectModal = () => {
+                    newProjectForm.value = { name: '', color: '#3b82f6', icon: '🏢' };
+                    showNewProjectModal.value = true;
+                };
+
+                const createProject = () => {
+                    if (!newProjectForm.value.name) return;
+                    
+                    const newId = 'proj-' + projectIdCounter++;
+                    projects.value.push({
+                        id: newId,
+                        name: newProjectForm.value.name,
+                        color: newProjectForm.value.color,
+                        icon: newProjectForm.value.icon
+                    });
+                    
+                    auditLogs.value.unshift({
+                        id: logIdCounter++,
+                        type: 'upload',
+                        userId: currentUser.value.id,
+                        projectId: newId,
+                        message: `Создан новый проект: ${newProjectForm.value.name}`,
+                        time: new Date().toISOString()
+                    });
+                    
+                    showNewProjectModal.value = false;
+                    selectProject(newId);
+                };
+
+                const handleKeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        if (selectedDoc.value) closeModal();
+                        if (showNewProjectModal.value) showNewProjectModal.value = false;
                     }
                 };
 
-                // === MODAL ===
-                const handleKeydown = (e) => {
-                    if (e.key === 'Escape' && selectedDoc.value) closeModal();
-                };
-
-                onMounted(() => {
-                    window.addEventListener('keydown', handleKeydown);
-                });
-                onUnmounted(() => {
-                    window.removeEventListener('keydown', handleKeydown);
-                });
+                onMounted(() => window.addEventListener('keydown', handleKeydown));
+                onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
 
                 const openModal = (doc) => {
                     selectedDoc.value = { ...doc, versions: [...doc.versions] };
@@ -757,11 +824,8 @@
                     document.body.style.overflow = '';
                 };
 
-                const toggleUserMenu = () => {
-                    showUserMenu.value = !showUserMenu.value;
-                };
+                const toggleUserMenu = () => showUserMenu.value = !showUserMenu.value;
 
-                // === FILE UPLOAD ===
                 const triggerUpload = () => fileInput.value?.click();
 
                 const handleFile = (e) => {
@@ -774,13 +838,17 @@
                         return;
                     }
                     
-                    if (!file.name.toLowerCase().endsWith('.xml')) {
-                        alert('Только файлы формата .xml');
-                        e.target.value = '';
-                        return;
-                    }
+                    // Определение типа файла
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    let type = 'other';
+                    if (ext === 'xml') type = 'xml';
+                    else if (ext === 'pdf') type = 'pdf';
+                    else if (['doc', 'docx'].includes(ext)) type = 'doc';
+                    else if (['xls', 'xlsx'].includes(ext)) type = 'xls';
+                    else if (['jpg', 'png', 'jpeg'].includes(ext)) type = 'img';
                     
                     uploadForm.value.fileName = file.name;
+                    uploadForm.value.fileType = type;
                 };
 
                 const resetUploadForm = () => {
@@ -788,7 +856,8 @@
                         projectId: selectedProject.value !== 'all' ? selectedProject.value : 'park-2',
                         responsibleId: currentUser.value.id,
                         comment: '',
-                        fileName: ''
+                        fileName: '',
+                        fileType: ''
                     };
                     if (fileInput.value) fileInput.value.value = '';
                 };
@@ -797,25 +866,27 @@
                     if (!canUpload.value) return;
                     
                     uploading.value = true;
-                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    await new Promise(resolve => setTimeout(resolve, 1500));
                     
-                    const fileName = uploadForm.value.fileName.replace('.xml', '').toUpperCase();
+                    const fileName = uploadForm.value.fileName;
                     const now = new Date().toISOString();
+                    const type = uploadForm.value.fileType;
                     
                     const newDoc = {
                         id: docIdCounter++,
-                        number: fileName,
+                        number: fileName.replace(/\.[^/.]+$/, ""), // Remove extension for display
                         status: 'processing',
                         version: 1,
                         updatedAt: now,
                         projectId: uploadForm.value.projectId,
                         responsibleId: uploadForm.value.responsibleId,
+                        fileType: type,
                         versions: [{
                             id: versionIdCounter++,
                             number: 1,
                             uploadedAt: now,
                             uploadedBy: uploadForm.value.responsibleId,
-                            comment: uploadForm.value.comment || 'Первичная загрузка'
+                            comment: uploadForm.value.comment || 'Загрузка файла'
                         }]
                     };
                     
@@ -826,33 +897,34 @@
                         type: 'upload',
                         userId: uploadForm.value.responsibleId,
                         projectId: uploadForm.value.projectId,
-                        message: `Загружен: ${fileName} (v1.0)`,
+                        message: `Загружен: ${fileName} (${type.toUpperCase()})`,
                         time: now
                     });
                     
-                    // Simulate validation
+                    // Эмуляция валидации в зависимости от типа
                     setTimeout(() => {
                         const doc = documents.value.find(d => d.id === newDoc.id);
                         if (doc) {
-                            doc.status = Math.random() > 0.3 ? 'valid' : 'invalid';
+                            // Для XML шанс ошибки 30%, для других файлов 10%
+                            const isError = type === 'xml' ? Math.random() > 0.7 : Math.random() > 0.9;
+                            doc.status = isError ? 'invalid' : 'valid';
+                            
                             auditLogs.value.unshift({
                                 id: logIdCounter++,
                                 type: doc.status === 'valid' ? 'upload' : 'error',
                                 userId: 'system',
                                 projectId: doc.projectId,
                                 message: doc.status === 'valid' 
-                                    ? `Валидация успешна: ${doc.number}` 
-                                    : `Ошибка валидации: ${doc.number}`,
+                                    ? `Проверка успешна: ${doc.number}` 
+                                    : `Ошибка проверки: ${doc.number}`,
                                 time: new Date().toISOString()
                             });
                         }
-                    }, 1800);
-                    
-                    resetUploadForm();
-                    uploading.value = false;
+                        uploading.value = false;
+                        resetUploadForm();
+                    }, 1500);
                 };
 
-                // === NEW VERSION ===
                 const createNewVersion = (doc) => {
                     const now = new Date().toISOString();
                     const newVer = doc.version + 1;
@@ -881,7 +953,7 @@
                     
                     setTimeout(() => {
                         const d = documents.value.find(x => x.id === doc.id);
-                        if (d) d.status = Math.random() > 0.3 ? 'valid' : 'invalid';
+                        if (d) d.status = Math.random() > 0.2 ? 'valid' : 'invalid';
                     }, 1500);
                     
                     closeModal();
@@ -890,14 +962,17 @@
                 return {
                     role, currentTab, currentTabName, selectedDoc, showUserMenu, uploading,
                     selectedProject, projects, employees, currentUser, documents, auditLogs,
-                    uploadForm, searchQuery, filterResponsible, filterStatus,
+                    uploadForm, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
                     filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, fileInput,
+                    showNewProjectModal, newProjectForm, projectColors, projectIcons,
                     
                     getProjectName, getProjectColor, getProjectDocsCount, getProjectBadgeClass,
                     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
+                    getFileIcon, getFileIconClass, getFileTypeName,
                     formatDate, formatTime, statusBadge, statusText, navClass, logIcon, logIconClass,
                     
-                    selectProject, openModal, closeModal, toggleUserMenu,
+                    selectProject, resetFilters, openNewProjectModal, createProject,
+                    openModal, closeModal, toggleUserMenu,
                     triggerUpload, handleFile, resetUploadForm, submitUpload, createNewVersion
                 };
             }
