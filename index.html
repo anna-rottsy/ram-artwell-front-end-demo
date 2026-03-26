@@ -2,119 +2,146 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Artwell Verify</title>
+<title>Artwell Verify | Ultimate PLM System</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-body { background:#020617; color:#cbd5e1; font-family:system-ui }
-.editor { min-height:300px }
-.dropzone { border:2px dashed #334155 }
+.custom-scrollbar::-webkit-scrollbar { width:4px }
+.custom-scrollbar::-webkit-scrollbar-thumb { background:#334155;border-radius:10px }
+.code-editor { font-family:monospace;background:#020617;color:#94a3b8 }
+.animate-up { animation:fadeInUp .3s ease-out forwards }
+@keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1} }
 </style>
-
 </head>
-<body class="h-screen overflow-hidden">
 
-<div class="flex h-full">
+<body class="bg-[#020617] text-slate-300 font-sans overflow-hidden">
+
+<div id="app" class="flex h-screen">
 
 <!-- SIDEBAR -->
-<div class="w-72 bg-slate-900 p-6 flex flex-col gap-6">
+<aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col">
 
-<h1 class="text-white text-xl font-black">ARTWELL</h1>
+<h1 class="text-white text-xl font-black mb-6">ARTWELL</h1>
 
-<button onclick="createFolder()" class="bg-blue-600 p-3 rounded-xl">
+<div class="flex-1 overflow-auto custom-scrollbar pr-2">
+<button onclick="createNewFolder()" class="mb-4 bg-blue-600 px-4 py-2 rounded-xl text-xs font-black">
 + папка
 </button>
-
-<div id="folders" class="space-y-2 overflow-auto"></div>
-
-<div class="mt-auto">
-<button onclick="setRole('contractor')" class="bg-blue-600 p-2 rounded">Подрядчик</button>
-<button onclick="setRole('client')" class="bg-slate-700 p-2 rounded">Заказчик</button>
+<nav id="project-nav"></nav>
 </div>
 
-</div>
+</aside>
 
 <!-- MAIN -->
-<div class="flex-1 flex flex-col">
+<main class="flex-1 flex flex-col">
 
-<div class="p-6 border-b border-slate-800 flex gap-4 items-center">
+<header class="h-24 px-10 flex items-center border-b border-slate-800">
 
-<input type="file" id="fileInput" multiple class="hidden" onchange="uploadFiles(this.files)">
-
-<button onclick="fileInput.click()" class="bg-white text-black px-6 py-3 rounded-xl font-bold">
-UPLOAD
+<button onclick="fileInput.click()" class="bg-white text-black px-8 py-3 rounded-2xl font-black">
+ПРИКРЕПИТЬ ФАЙЛ
 </button>
 
-<div id="drop" class="dropzone flex-1 p-4 rounded-xl text-center">
-DRAG FILES HERE
+</header>
+
+<div id="registry"
+     class="flex-1 p-10 overflow-y-auto custom-scrollbar space-y-4"
+     ondrop="dropUpload(event)"
+     ondragover="allowDrop(event)">
 </div>
 
-</div>
-
-<div id="list" class="p-6 overflow-auto space-y-4"></div>
-
-</div>
+</main>
 
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center">
+<div id="editorModal"
+     style="display:none"
+     class="fixed inset-0 bg-black/90 flex items-center justify-center">
 
-<div class="bg-slate-900 w-[900px] h-[80vh] rounded-3xl flex flex-col">
+<div class="bg-[#0f172a] w-[1000px] h-[85vh] rounded-[40px] flex flex-col overflow-hidden">
 
-<div class="p-6 border-b border-slate-800 flex justify-between">
-<input id="docName" class="bg-transparent text-white text-2xl font-bold outline-none">
+<div class="p-8 border-b border-slate-800 flex justify-between">
+<input id="modalFileName"
+       class="bg-transparent text-white text-2xl font-black outline-none">
 <button onclick="closeModal()">X</button>
 </div>
 
-<div id="preview" class="flex-1 overflow-auto p-6"></div>
+<div class="flex flex-1 overflow-hidden">
 
-<div id="editorToolbar" class="p-4 border-t border-slate-800 flex gap-2">
-<button onclick="cmd('bold')" class="bg-slate-700 px-3">B</button>
-<button onclick="cmd('italic')" class="bg-slate-700 px-3">I</button>
-<button onclick="cmd('insertUnorderedList')" class="bg-slate-700 px-3">LIST</button>
-<button onclick="saveDoc()" class="bg-emerald-600 px-6 ml-auto">SAVE</button>
+<div class="flex-1 flex flex-col">
+
+<div class="flex gap-2 p-4 border-b border-slate-800">
+<button onclick="formatDoc('bold')" class="bg-slate-800 px-4 py-2 rounded-xl">B</button>
+<button onclick="formatDoc('italic')" class="bg-slate-800 px-4 py-2 rounded-xl">I</button>
+<button onclick="formatDoc('insertUnorderedList')" class="bg-slate-800 px-4 py-2 rounded-xl">LIST</button>
+<button onclick="formatDoc('formatBlock','pre')" class="bg-slate-800 px-4 py-2 rounded-xl">{ }</button>
+</div>
+
+<div id="fileContent"
+     contenteditable
+     class="flex-1 code-editor p-12 overflow-auto custom-scrollbar">
+</div>
+
+<div id="filePreview"
+     class="hidden flex-1 p-12 overflow-auto">
+</div>
+
+</div>
+
+<div class="w-80 border-l border-slate-800 p-8">
+
+<button onclick="saveAllChanges()"
+        class="bg-emerald-600 w-full p-4 rounded-2xl font-black">
+SAVE
+</button>
+
 </div>
 
 </div>
 
 </div>
+
+</div>
+
+<input type="file" id="fileInput" multiple class="hidden" onchange="handleFileUpload(this)">
 
 <script>
 
 let state = {
-role:"contractor",
 folder:"all",
-folders:["General"],
+folders:["ЖК Артвелл"],
 docs:[],
-active:null
+activeId:null
 }
 
-function renderFolders(){
-folders.innerHTML =
-`<div onclick="setFolder('all')" class="p-2 bg-slate-800 rounded cursor-pointer">All</div>`+
-state.folders.map(f=>
-`<div onclick="setFolder('${f}')" class="p-2 bg-slate-800 rounded cursor-pointer">${f}</div>`
+function render(){
+
+const nav = document.getElementById("project-nav")
+
+nav.innerHTML =
+`<button onclick="setFolder('all')" class="block w-full text-left p-3">Все</button>` +
+state.folders.map(f =>
+`<button onclick="setFolder('${f}')" class="block w-full text-left p-3">${f}</button>`
 ).join("")
-}
 
-function renderDocs(){
+const list = document.getElementById("registry")
 
 let docs = state.folder==="all"
 ? state.docs
-: state.docs.filter(d=>d.folder===state.folder)
+: state.docs.filter(d=>d.project===state.folder)
 
 list.innerHTML = docs.map(d=>`
 
-<div class="bg-slate-900 p-6 rounded-2xl flex justify-between items-center">
+<div class="bg-[#0f172a] p-8 rounded-[30px] flex justify-between">
 
 <div>
-<div class="text-white font-bold">${d.name}</div>
+<div class="text-white font-black">${d.name}</div>
 <div class="text-xs text-slate-500">v.${d.ver}</div>
 </div>
 
-<button onclick="openDoc(${d.id})" class="bg-blue-600 px-6 py-2 rounded">
+<button onclick="openEditor(${d.id})"
+        class="bg-blue-600 px-6 py-2 rounded-xl font-black">
 OPEN
 </button>
 
@@ -124,40 +151,28 @@ OPEN
 
 }
 
-function setFolder(f){
-state.folder=f
-renderDocs()
-}
-
-function createFolder(){
-let name = prompt("folder")
-if(!name) return
-state.folders.push(name)
-renderFolders()
-}
-
 function uploadFiles(files){
 
 [...files].forEach(file=>{
 
-let reader = new FileReader()
+const reader = new FileReader()
 
 reader.onload = e=>{
 
 state.docs.unshift({
 id:Date.now()+Math.random(),
 name:file.name,
+project:state.folder==="all"?state.folders[0]:state.folder,
+ver:1,
 type:file.type,
-folder:state.folder==="all"?state.folders[0]:state.folder,
-content:e.target.result,
-ver:1
+content:e.target.result
 })
 
-renderDocs()
+render()
 
 }
 
-if(file.type.startsWith("text"))
+if(file.type.startsWith("text") || file.name.endsWith(".xml"))
 reader.readAsText(file)
 else
 reader.readAsDataURL(file)
@@ -166,77 +181,88 @@ reader.readAsDataURL(file)
 
 }
 
-function openDoc(id){
-
-let d = state.docs.find(x=>x.id===id)
-state.active=d
-
-docName.value=d.name
-
-editorToolbar.style.display="flex"
-
-if(d.type.startsWith("image")){
-preview.innerHTML=`<img src="${d.content}" class="max-h-full">`
-editorToolbar.style.display="none"
+function handleFileUpload(input){
+uploadFiles(input.files)
 }
 
-else if(d.type==="application/pdf"){
-preview.innerHTML=`<iframe src="${d.content}" class="w-full h-full"></iframe>`
-editorToolbar.style.display="none"
+function allowDrop(e){ e.preventDefault() }
+
+function dropUpload(e){
+e.preventDefault()
+uploadFiles(e.dataTransfer.files)
 }
 
-else if(d.type.startsWith("text") || d.content.startsWith("<")){
-preview.innerHTML=`<div id="editor" contenteditable class="editor outline-none">${d.content}</div>`
-}
+function openEditor(id){
 
+state.activeId=id
+
+const doc = state.docs.find(d=>d.id===id)
+
+modalFileName.value = doc.name
+
+const editor = document.getElementById("fileContent")
+const preview = document.getElementById("filePreview")
+
+editor.classList.remove("hidden")
+preview.classList.add("hidden")
+
+if(doc.type?.startsWith("image")){
+preview.innerHTML = `<img src="${doc.content}" class="max-h-full">`
+preview.classList.remove("hidden")
+editor.classList.add("hidden")
+}
+else if(doc.type==="application/pdf"){
+preview.innerHTML = `<iframe src="${doc.content}" class="w-full h-full"></iframe>`
+preview.classList.remove("hidden")
+editor.classList.add("hidden")
+}
+else if(!doc.type?.startsWith("text")){
+preview.innerHTML = `<a download="${doc.name}" href="${doc.content}" class="bg-blue-600 px-6 py-3 rounded-xl">СКАЧАТЬ</a>`
+preview.classList.remove("hidden")
+editor.classList.add("hidden")
+}
 else{
-preview.innerHTML=`<a download="${d.name}" href="${d.content}" class="bg-blue-600 p-4 rounded">DOWNLOAD</a>`
-editorToolbar.style.display="none"
+editor.innerHTML = doc.content
 }
 
-modal.classList.remove("hidden")
+editorModal.style.display="flex"
 
 }
 
-function saveDoc(){
+function saveAllChanges(){
 
-let editor = document.getElementById("editor")
-if(!editor) return
+const doc = state.docs.find(d=>d.id===state.activeId)
 
-state.active.content = editor.innerHTML
-state.active.name = docName.value
-state.active.ver++
+doc.name = modalFileName.value
+doc.content = fileContent.innerHTML
+doc.ver++
 
 closeModal()
-renderDocs()
+render()
 
 }
 
 function closeModal(){
-modal.classList.add("hidden")
+editorModal.style.display="none"
 }
 
-function cmd(c){
-document.execCommand(c,false,null)
+function createNewFolder(){
+let n = prompt("folder")
+if(!n) return
+state.folders.push(n)
+render()
 }
 
-drop.ondragover=e=>{
-e.preventDefault()
-drop.classList.add("bg-slate-800")
+function setFolder(f){
+state.folder=f
+render()
 }
 
-drop.ondragleave=e=>{
-drop.classList.remove("bg-slate-800")
+function formatDoc(cmd,val=null){
+document.execCommand(cmd,false,val)
 }
 
-drop.ondrop=e=>{
-e.preventDefault()
-drop.classList.remove("bg-slate-800")
-uploadFiles(e.dataTransfer.files)
-}
-
-renderFolders()
-renderDocs()
+render()
 
 </script>
 
