@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Artwell Enterprise | Pro Document Control</title>
+    <title>Artwell Enterprise | Final MVP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .xml-editor { font-family: 'Courier New', monospace; background: #0f172a; color: #94a3b8; }
-        .tab-active { border-bottom: 3px solid #3b82f6; color: #f8fafc; }
+        .card-hover:hover { transform: translateY(-2px); border-color: #3b82f6; }
     </style>
 </head>
 <body class="bg-[#020617] text-slate-300 font-sans overflow-hidden">
@@ -33,15 +33,15 @@
                     <nav class="space-y-1">
                         <button onclick="setProject('all')" class="w-full text-left p-3 rounded-xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between">
                             <span>Все объекты</span>
-                            <span id="badge-all" class="bg-slate-800 px-2 py-0.5 rounded text-[10px]">0</span>
+                            <span id="badge-all" class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-mono">0</span>
                         </button>
                         <button onclick="setProject('ЖК Артвелл')" class="w-full text-left p-3 rounded-xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between">
                             <span>🏢 ЖК Артвелл</span>
-                            <span id="badge-jk" class="bg-slate-800 px-2 py-0.5 rounded text-[10px]">0</span>
+                            <span id="badge-jk" class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-mono">0</span>
                         </button>
                         <button onclick="setProject('Изыскания')" class="w-full text-left p-3 rounded-xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between text-blue-400">
                             <span>🔬 Изыскания</span>
-                            <span id="badge-iz" class="bg-slate-800 px-2 py-0.5 rounded text-[10px]">0</span>
+                            <span id="badge-iz" class="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-mono">0</span>
                         </button>
                     </nav>
                 </div>
@@ -50,101 +50,57 @@
             <div class="mt-auto p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs">АР</div>
-                    <div>
-                        <p class="text-xs font-bold text-white leading-none">Анна Verify</p>
-                        <p class="text-[9px] text-slate-500 uppercase mt-1 tracking-tighter">Frontend Lead</p>
-                    </div>
+                    <div><p class="text-xs font-bold text-white leading-none">Анна Verify</p></div>
                 </div>
             </div>
         </aside>
 
         <!-- Main -->
         <main class="flex-1 flex flex-col">
-            <!-- Top Header -->
             <header class="h-24 px-10 flex items-center justify-between border-b border-slate-800 bg-[#020617]/80 backdrop-blur-xl z-10">
                 <div class="flex items-center gap-8">
                     <div>
-                        <p class="text-[9px] font-black text-slate-500 uppercase mb-1">Группировка</p>
-                        <h2 id="current-project-title" class="text-xl font-black text-white uppercase tracking-tight font-serif italic">Все объекты</h2>
+                        <p class="text-[9px] font-black text-slate-500 uppercase mb-1 italic">Текущий вид</p>
+                        <h2 id="current-project-title" class="text-xl font-black text-white uppercase tracking-tight">Все объекты</h2>
                     </div>
-                    <div class="h-10 w-px bg-slate-800"></div>
                     <div class="flex gap-6">
-                        <div class="text-center">
-                            <p class="text-[9px] font-black text-slate-500 uppercase mb-0.5 italic">Валидно</p>
-                            <p id="stat-ok" class="text-emerald-400 font-black leading-none">0</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-[9px] font-black text-slate-500 uppercase mb-0.5 italic">Ошибки</p>
-                            <p id="stat-err" class="text-rose-500 font-black leading-none">0</p>
-                        </div>
+                        <div class="text-center"><p id="stat-ok" class="text-emerald-400 font-black text-lg">0</p><p class="text-[8px] text-slate-500 uppercase">ОК</p></div>
+                        <div class="text-center"><p id="stat-err" class="text-rose-500 font-black text-lg">0</p><p class="text-[8px] text-slate-500 uppercase">ERR</p></div>
                     </div>
                 </div>
-                
-                <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-white/5 flex items-center gap-3 group">
-                    <i class="fas fa-file-export group-hover:rotate-12 transition"></i> ПРИКРЕПИТЬ XML/XSD
+                <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl flex items-center gap-3">
+                    <i class="fas fa-plus"></i> ПРИКРЕПИТЬ ФАЙЛ
                 </button>
             </header>
 
-            <!-- Content Area -->
             <div id="registry" class="flex-1 p-10 overflow-y-auto custom-scrollbar space-y-4">
-                <!-- Сюда JS рендерит список -->
+                <!-- Каточки -->
             </div>
         </main>
     </div>
 
-    <!-- ADVANCED EDITOR MODAL -->
-    <div id="editorModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-lg">
+    <!-- МОДАЛКА РЕДАКТОРА -->
+    <div id="editorModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-lg">
         <div class="bg-[#0f172a] w-full max-w-5xl h-[85vh] rounded-[2.5rem] border border-slate-700 shadow-2xl flex flex-col overflow-hidden">
-            <!-- Modal Header -->
             <div class="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
                 <div class="flex items-center gap-4">
-                    <div class="bg-blue-600/10 p-3 rounded-xl border border-blue-500/20"><i class="fas fa-edit text-blue-500"></i></div>
-                    <div>
-                        <h3 id="modalFileName" class="text-xl font-black text-white tracking-tight">document.xsd</h3>
-                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Режим прямого редактирования XML/XSD</p>
-                    </div>
+                    <div class="bg-blue-600/20 p-3 rounded-xl"><i class="fas fa-edit text-blue-500"></i></div>
+                    <h3 id="modalFileName" class="text-xl font-black text-white">filename.xsd</h3>
                 </div>
-                <button onclick="closeModal()" class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 hover:text-white transition flex items-center justify-center">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+                <button onclick="closeModal()" class="text-slate-500 hover:text-white transition text-2xl">&times;</button>
             </div>
-
-            <!-- Modal Body (Two Columns) -->
             <div class="flex-1 flex overflow-hidden">
-                <!-- Left Column: XML Editor -->
-                <div class="flex-1 flex flex-col border-r border-slate-800">
-                    <div class="p-4 bg-slate-900 flex justify-between items-center">
-                        <span class="text-[10px] font-black text-slate-500 uppercase italic">Исходный код файла</span>
-                        <span class="text-[9px] bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-mono">UTF-8</span>
+                <textarea id="xmlContent" class="flex-1 xml-editor p-8 outline-none resize-none custom-scrollbar text-sm leading-relaxed" spellcheck="false"></textarea>
+                <div class="w-80 p-8 space-y-6 bg-slate-900/30">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-500 uppercase block mb-2 tracking-widest">Проект</label>
+                        <select id="in-proj" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none">
+                            <option value="ЖК Артвелл">ЖК Артвелл</option>
+                            <option value="Изыскания">Изыскания</option>
+                        </select>
                     </div>
-                    <textarea id="xmlContent" class="flex-1 w-full xml-editor p-8 outline-none resize-none custom-scrollbar text-sm leading-relaxed" spellcheck="false"></textarea>
-                </div>
-
-                <!-- Right Column: Meta & Logs -->
-                <div class="w-96 bg-slate-900/30 p-8 flex flex-col space-y-6">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase block mb-2">Название версии</label>
-                            <input id="in-name" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none focus:border-blue-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-500 uppercase block mb-2">Проект</label>
-                            <select id="in-proj" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none focus:border-blue-500">
-                                <option value="ЖК Артвелл">ЖК Артвелл</option>
-                                <option value="Изыскания">Изыскания</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="xsd-alert" class="p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl hidden">
-                        <p class="text-[10px] font-black text-rose-500 uppercase mb-2">XSD Analyzer</p>
-                        <p class="text-xs text-rose-200/70 italic leading-relaxed font-medium">Обнаружено несоответствие типов данных в секции &lt;schema&gt;. Исправьте код слева.</p>
-                    </div>
-
-                    <div class="mt-auto space-y-3">
-                        <button onclick="saveDocument()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl font-black text-xs uppercase tracking-widest transition shadow-lg shadow-emerald-600/10 flex items-center justify-center gap-2">
-                            <i class="fas fa-check-circle"></i> Сохранить v.<span id="next-v">1</span>
-                        </button>
+                    <div class="pt-10 space-y-3">
+                        <button onclick="saveDocument()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl font-black text-xs uppercase transition shadow-lg">Сохранить v.<span id="next-v"></span></button>
                         <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-2xl font-black text-xs uppercase transition">Отмена</button>
                     </div>
                 </div>
@@ -157,7 +113,7 @@
     <script>
         let db = [
             { id: 1, name: 'MainSchema-01.xsd', project: 'ЖК Артвелл', status: 'valid', ver: 1, content: '<?xml version="1.0" encoding="UTF-8"?>\n<xs:schema xmlns:xs="http://www.w3.org">\n  <xs:element name="note" type="xs:string""")/>>\n</xs:schema>' },
-            { id: 2, name: 'GeologicalReport-Draft.xsd', project: 'Изыскания', status: 'error', ver: 2, content: '<!-- Ошибка в заголовке -->\n<xs:schema>\n  <xs:invalid_tag />\n</xs:schema>' }
+            { id: 2, name: 'GeologicalReport-01-00.xsd', project: 'Изыскания', status: 'error', ver: 1, content: '<xs:schema>\n  <!-- Error in tag -->\n  <xs:invalid_tag />\n</xs:schema>' }
         ];
 
         let currentFilter = 'all';
@@ -168,26 +124,37 @@
             const filtered = currentFilter === 'all' ? db : db.filter(d => d.project === currentFilter);
             
             container.innerHTML = filtered.map(doc => `
-                <div class="bg-[#0f172a] p-6 rounded-[2rem] border border-slate-800/50 flex items-center justify-between hover:border-blue-500/50 transition-all group">
+                <div class="bg-[#0f172a] p-6 rounded-[2rem] border border-slate-800/50 flex items-center justify-between transition-all card-hover group">
                     <div class="flex items-center gap-6">
-                        <div class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-700 group-hover:scale-105 transition">
-                            <i class="fas ${doc.name.includes('.xsd') ? 'fa-code' : 'fa-file-alt'} text-slate-500"></i>
-                        </div>
+                        <div class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-700"><i class="fas fa-file-code text-slate-600"></i></div>
                         <div>
                             <div class="flex items-center gap-3 mb-1">
                                 <h4 class="text-xl font-black text-white">${doc.name}</h4>
-                                <span class="text-[9px] bg-blue-600/10 text-blue-500 px-2 rounded-full font-black border border-blue-500/10 uppercase italic">v.${doc.ver}</span>
+                                <span class="text-[9px] bg-blue-600/10 text-blue-500 px-2 rounded-full font-black italic uppercase">v.${doc.ver}</span>
                             </div>
-                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">${doc.project} • Проверка XSD: 
-                                <span class="${doc.status === 'valid' ? 'text-emerald-500' : 'text-rose-500'} font-black">${doc.status.toUpperCase()}</span>
-                            </p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">${doc.project} • <span class="${doc.status === 'valid' ? 'text-emerald-500' : 'text-rose-500'} font-black">${doc.status.toUpperCase()}</span></p>
                         </div>
                     </div>
-                    <button onclick="openEditor(${doc.id})" class="bg-slate-900 hover:bg-blue-600 text-slate-400 hover:text-white px-8 py-3 rounded-xl text-xs font-black uppercase transition-all shadow-inner border border-slate-800">ПРАВИТЬ XML</button>
+                    <div class="flex items-center gap-4">
+                        <button onclick="openEditor(${doc.id})" class="bg-slate-900 hover:bg-blue-600 text-slate-400 hover:text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase transition border border-slate-800">ПРАВИТЬ</button>
+                        <button onclick="deleteDoc(${doc.id})" class="w-11 h-11 bg-slate-900 hover:bg-rose-600/20 text-slate-600 hover:text-rose-500 rounded-xl transition border border-slate-800 flex items-center justify-center">
+                            <i class="far fa-trash-alt"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
 
-            // Статистика
+            updateStats();
+        }
+
+        function deleteDoc(id) {
+            if (confirm('Вы уверены, что хотите удалить этот документ? Отменить действие будет невозможно.')) {
+                db = db.filter(d => d.id !== id);
+                render();
+            }
+        }
+
+        function updateStats() {
             document.getElementById('badge-all').innerText = db.length;
             document.getElementById('badge-jk').innerText = db.filter(d => d.project === 'ЖК Артвелл').length;
             document.getElementById('badge-iz').innerText = db.filter(d => d.project === 'Изыскания').length;
@@ -205,19 +172,16 @@
             if (!input.files.length) return;
             const file = input.files[0];
             const reader = new FileReader();
-            
             reader.onload = function(e) {
-                const newDoc = {
+                db.unshift({
                     id: Date.now(),
                     name: file.name,
                     project: file.name.toLowerCase().includes('report') ? 'Изыскания' : 'ЖК Артвелл',
-                    status: file.name.toLowerCase().includes('error') ? 'error' : 'valid',
+                    status: 'valid',
                     ver: 1,
                     content: e.target.result
-                };
-                db.unshift(newDoc);
+                });
                 render();
-                alert('Файл ' + file.name + ' загружен и добавлен в проект ' + newDoc.project);
             };
             reader.readAsText(file);
         }
@@ -225,37 +189,24 @@
         function openEditor(id) {
             activeId = id;
             const doc = db.find(d => d.id === id);
-            
             document.getElementById('modalFileName').innerText = doc.name;
             document.getElementById('xmlContent').value = doc.content;
-            document.getElementById('in-name').value = doc.name;
             document.getElementById('in-proj').value = doc.project;
             document.getElementById('next-v').innerText = doc.ver + 1;
-            
-            const alert = document.getElementById('xsd-alert');
-            doc.status === 'error' ? alert.classList.remove('hidden') : alert.classList.add('hidden');
-
             document.getElementById('editorModal').style.display = 'flex';
         }
 
         function saveDocument() {
             const doc = db.find(d => d.id === activeId);
-            const newContent = document.getElementById('xmlContent').value;
-            
-            doc.name = document.getElementById('in-name').value;
             doc.project = document.getElementById('in-proj').value;
-            doc.content = newContent;
+            doc.content = document.getElementById('xmlContent').value;
             doc.ver += 1;
-            
-            // "Умная" валидация: если стерли слово "invalid" или "error" из XML, считаем исправленным
-            doc.status = (newContent.includes('invalid') || doc.name.includes('error')) ? 'error' : 'valid';
-
             closeModal();
             render();
         }
 
         function closeModal() { document.getElementById('editorModal').style.display = 'none'; }
-
+        
         render();
     </script>
 </body>
