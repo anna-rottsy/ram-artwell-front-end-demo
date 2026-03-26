@@ -36,25 +36,32 @@
         .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         
-        /* FIXED SIDEBAR LAYOUT */
-        .sidebar-wrapper {
+        /* FIXED SIDEBAR LAYOUT - Proper distribution */
+        .sidebar-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
         }
         
-        .sidebar-content {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            overflow: hidden;
+        /* Top section - Navigation (fixed height) */
+        .sidebar-top {
+            flex: 0 0 auto;
         }
         
-        .sidebar-nav {
-            flex: 1;
+        /* Middle section - Projects (scrollable, takes remaining space) */
+        .sidebar-middle {
+            flex: 1 1 auto;
             overflow-y: auto;
             overflow-x: hidden;
+            min-height: 0;
+        }
+        
+        /* Bottom section - User (fixed at bottom, never moves) */
+        .sidebar-bottom {
+            flex: 0 0 auto;
+            margin-top: auto;
+            border-top: 1px solid #1e293b;
         }
         
         .sidebar-transition { transition: width 0.3s ease; }
@@ -68,6 +75,22 @@
             width: 3px;
             background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
             pointer-events: none;
+            z-index: 10;
+        }
+        
+        /* Hide text when collapsed */
+        .collapsed-text {
+            display: none;
+        }
+        .sidebar-collapsed .collapsed-text {
+            display: none !important;
+        }
+        
+        /* Show icons always */
+        .collapsed-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         /* Tree view */
@@ -93,13 +116,20 @@
             50% { opacity: 0.6; }
         }
         .validating { animation: validate-pulse 1.5s ease-in-out infinite; }
+        
+        /* Error highlighting in XML */
+        .xml-error {
+            background-color: rgba(239, 68, 68, 0.2);
+            border-left: 3px solid #ef4444;
+            padding: 2px 4px;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
     <div id="app" v-cloak class="min-h-screen flex">
         
         <!-- SIDEBAR -->
-        <aside :class="sidebarClasses" class="bg-slate-900 text-white shadow-xl z-40 fixed md:relative sidebar-wrapper">
+        <aside :class="sidebarClasses" class="bg-slate-900 text-white shadow-xl z-40 fixed md:relative sidebar-container">
             <!-- Blue stripe when collapsed -->
             <div v-if="sidebarCollapsed && !isMobile" class="collapsed-stripe"></div>
             
@@ -107,17 +137,16 @@
             <div v-if="sidebarOpen && isMobile" @click="toggleSidebar" 
                  class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
             
-            <!-- Sidebar Content -->
-            <div class="sidebar-content" :class="sidebarCollapsed && !isMobile ? 'min-w-[80px] max-w-[80px]' : 'min-w-[288px] max-w-[288px]'">
-                
+            <!-- TOP: Header + Navigation -->
+            <div class="sidebar-top shrink-0">
                 <!-- Header -->
-                <div class="p-5 border-b border-slate-800 shrink-0">
+                <div class="p-5 border-b border-slate-800">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3" :class="{ 'justify-center': sidebarCollapsed && !isMobile }">
+                        <div class="flex items-center gap-3">
                             <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20 shrink-0">
                                 <i class="fas fa-layer-group text-xl text-white"></i>
                             </div>
-                            <span v-if="!sidebarCollapsed || isMobile" class="font-bold text-lg tracking-tight whitespace-nowrap">ARTWELL <span class="text-blue-400">XML</span></span>
+                            <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="font-bold text-lg tracking-tight whitespace-nowrap">ARTWELL <span class="text-blue-400">XML</span></span>
                         </div>
                         <button v-if="!isMobile" @click="toggleSidebarCollapse" 
                                 class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-800 transition text-slate-400 shrink-0 ml-auto" 
@@ -125,144 +154,151 @@
                             <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" class="text-xs"></i>
                         </button>
                     </div>
-                    <p v-if="!sidebarCollapsed" class="text-[10px] text-slate-400 ml-11 mt-1">Система верификации</p>
+                    <p :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="text-[10px] text-slate-400 ml-11 mt-1">Система верификации</p>
                 </div>
                 
-                <!-- Main Navigation -->
-                <nav class="p-4 space-y-1 shrink-0" v-if="!sidebarCollapsed || isMobile">
+                <!-- Navigation -->
+                <nav class="p-4 space-y-1" v-if="!sidebarCollapsed || isMobile">
                     <button @click="navigateTo('registry')" :class="navClass('registry')" class="w-full">
-                        <i class="fas fa-list-ul w-5 shrink-0"></i> 
-                        <span v-if="!sidebarCollapsed" class="ml-3 whitespace-nowrap">Реестр документов</span>
+                        <div class="collapsed-icon w-5 shrink-0">
+                            <i class="fas fa-list-ul"></i>
+                        </div>
+                        <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="ml-3 whitespace-nowrap">Реестр документов</span>
                     </button>
                     <button @click="navigateTo('upload')" v-if="role === 'contractor'" :class="navClass('upload')" class="w-full">
-                        <i class="fas fa-cloud-upload-alt w-5 shrink-0"></i> 
-                        <span v-if="!sidebarCollapsed" class="ml-3 whitespace-nowrap">Загрузка файлов</span>
+                        <div class="collapsed-icon w-5 shrink-0">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="ml-3 whitespace-nowrap">Загрузка файлов</span>
                     </button>
                     <button @click="navigateTo('audit')" :class="navClass('audit')" class="w-full">
-                        <i class="fas fa-history w-5 shrink-0"></i> 
-                        <span v-if="!sidebarCollapsed" class="ml-3 whitespace-nowrap">Аудит-лог</span>
+                        <div class="collapsed-icon w-5 shrink-0">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="ml-3 whitespace-nowrap">Аудит-лог</span>
                     </button>
                 </nav>
+            </div>
 
-                <!-- Projects Section (Scrollable) -->
-                <div class="sidebar-nav px-4 mt-2" v-if="!sidebarCollapsed || isMobile">
-                    <div class="flex items-center justify-between mb-3 px-1 shrink-0">
-                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider whitespace-nowrap">Проекты</span>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button v-if="selectedProject && selectedProject !== 'all'"
-                                    @click="selectProject('all')"
-                                    class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition whitespace-nowrap">
-                                Сброс
-                            </button>
-                            <button v-if="role === 'contractor'" 
-                                    @click="openNewProjectModal"
-                                    class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition shrink-0"
-                                    title="Создать проект">
-                                <i class="fas fa-plus text-[10px]"></i>
-                            </button>
-                        </div>
+            <!-- MIDDLE: Projects (Scrollable) -->
+            <div class="sidebar-middle px-4 py-2" v-if="!sidebarCollapsed || isMobile">
+                <div class="flex items-center justify-between mb-3 px-1 shrink-0">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider whitespace-nowrap">Проекты</span>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <button v-if="selectedProject && selectedProject !== 'all'"
+                                @click="selectProject('all')"
+                                class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition whitespace-nowrap">
+                            Сброс
+                        </button>
+                        <button v-if="role === 'contractor'" 
+                                @click="openNewProjectModal"
+                                class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition shrink-0"
+                                title="Создать проект">
+                            <i class="fas fa-plus text-[10px]"></i>
+                        </button>
                     </div>
-                    
-                    <!-- All Projects -->
-                    <div @click="selectProject('all')" 
+                </div>
+                
+                <!-- All Projects -->
+                <div @click="selectProject('all')" 
+                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 shrink-0"
+                     :class="!selectedProject || selectedProject === 'all' 
+                        ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800'">
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                        <i class="fas fa-th-large"></i>
+                    </div>
+                    <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="text-sm font-medium flex-1 truncate">Все проекты</span>
+                    <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
+                </div>
+                
+                <!-- Project List -->
+                <div v-for="project in projects" :key="project.id" class="mb-2">
+                    <div @click="selectProject(project.id)"
                          class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 shrink-0"
-                         :class="!selectedProject || selectedProject === 'all' 
+                         :class="selectedProject === project.id 
                             ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
                             : 'text-slate-400 hover:text-white hover:bg-slate-800'">
-                        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                            <i class="fas fa-th-large"></i>
-                        </div>
-                        <span v-if="!sidebarCollapsed" class="text-sm font-medium flex-1 truncate">Все проекты</span>
-                        <span v-if="!sidebarCollapsed" class="text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
-                    </div>
-                    
-                    <!-- Project List -->
-                    <div v-for="project in projects" :key="project.id" class="mb-2">
-                        <div @click="selectProject(project.id)"
-                             class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 shrink-0"
-                             :class="selectedProject === project.id 
-                                ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
-                                : 'text-slate-400 hover:text-white hover:bg-slate-800'">
-                            
-                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
-                                 :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
-                                <span :style="{ color: project.color }">{{ project.icon }}</span>
-                            </div>
-                            
-                            <span v-if="!sidebarCollapsed" class="text-sm font-medium flex-1 truncate">{{ project.name }}</span>
-                            <span v-if="!sidebarCollapsed" class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
-                                  :style="getProjectBadgeStyle(project.id)">
-                                {{ getProjectDocsCount(project.id) }}
-                            </span>
+                        
+                        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
+                             :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
+                            <span :style="{ color: project.color }">{{ project.icon }}</span>
                         </div>
                         
-                        <!-- Orders Tree -->
-                        <div v-if="!sidebarCollapsed && (selectedProject === project.id || expandedProjects.includes(project.id))" 
-                             class="ml-4 space-y-1">
-                            <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item">
-                                <div @click="toggleOrderExpand(order.id)" 
-                                     class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-slate-300 hover:text-white hover:bg-slate-800 text-xs">
-                                    <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
-                                    <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
-                                    <span class="truncate flex-1">{{ order.name }}</span>
-                                    <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
-                                </div>
-                                
-                                <!-- Documents under Order -->
-                                <div v-if="expandedOrders.includes(order.id)" class="ml-4 space-y-1 mt-1">
-                                    <div v-for="doc in getDocumentsByOrder(order.id)" :key="doc.id"
-                                         @click="openModal(doc)"
-                                         class="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50 text-[11px]">
-                                        <i :class="getFileIcon(doc.fileType)" class="text-[10px] shrink-0" :style="{color: getFileIconColor(doc.fileType)}"></i>
-                                        <span class="truncate flex-1">{{ doc.number }}</span>
-                                        <span :class="statusBadgeMini(doc.status)" class="shrink-0 text-[9px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
-                                    </div>
+                        <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="text-sm font-medium flex-1 truncate">{{ project.name }}</span>
+                        <span :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                              :style="getProjectBadgeStyle(project.id)">
+                            {{ getProjectDocsCount(project.id) }}
+                        </span>
+                    </div>
+                    
+                    <!-- Orders Tree -->
+                    <div :class="{'collapsed-text': sidebarCollapsed && !isMobile}" 
+                         v-if="!sidebarCollapsed && (selectedProject === project.id || expandedProjects.includes(project.id))" 
+                         class="ml-4 space-y-1">
+                        <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item">
+                            <div @click="toggleOrderExpand(order.id)" 
+                                 class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-slate-300 hover:text-white hover:bg-slate-800 text-xs">
+                                <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
+                                <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
+                                <span class="truncate flex-1">{{ order.name }}</span>
+                                <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
+                            </div>
+                            
+                            <!-- Documents under Order -->
+                            <div v-if="expandedOrders.includes(order.id)" class="ml-4 space-y-1 mt-1">
+                                <div v-for="doc in getDocumentsByOrder(order.id)" :key="doc.id"
+                                     @click="openModal(doc)"
+                                     class="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50 text-[11px]">
+                                    <i :class="getFileIcon(doc.fileType)" class="text-[10px] shrink-0" :style="{color: getFileIconColor(doc.fileType)}"></i>
+                                    <span class="truncate flex-1">{{ doc.number }}</span>
+                                    <span :class="statusBadgeMini(doc.status)" class="shrink-0 text-[9px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Bottom: User & Settings (Always at bottom) -->
-                <div class="p-4 border-t border-slate-800 bg-slate-950/30 shrink-0 mt-auto" v-if="!sidebarCollapsed || isMobile">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="relative shrink-0">
-                            <button @click="toggleUserMenu" 
-                                    class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10 hover:ring-blue-400 transition" 
-                                    :style="{ backgroundColor: currentUser.color }">
-                                {{ getInitials(currentUser) }}
-                            </button>
-                            <!-- User Dropdown -->
-                            <transition name="fade">
-                                <div v-if="showUserMenu" class="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
-                                    <div class="px-4 py-2 border-b border-slate-100">
-                                        <p class="text-xs font-bold text-slate-800">{{ currentUser.name }}</p>
-                                        <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
-                                    </div>
-                                    <button v-for="emp in employees" :key="emp.id"
-                                            @click="currentUser = emp; showUserMenu = false" 
-                                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition flex items-center gap-2">
-                                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0" 
-                                              :style="{ backgroundColor: emp.color }">
-                                            {{ getInitials(emp) }}
-                                        </span>
-                                        <span class="truncate">{{ emp.name }}</span>
-                                    </button>
+            <!-- BOTTOM: User (ALWAYS at bottom, static) -->
+            <div class="sidebar-bottom p-4 bg-slate-950/30" v-if="!sidebarCollapsed || isMobile">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="relative shrink-0">
+                        <button @click="toggleUserMenu" 
+                                class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10 hover:ring-blue-400 transition" 
+                                :style="{ backgroundColor: currentUser.color }">
+                            {{ getInitials(currentUser) }}
+                        </button>
+                        <!-- User Dropdown -->
+                        <transition name="fade">
+                            <div v-if="showUserMenu" class="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                                <div class="px-4 py-2 border-b border-slate-100">
+                                    <p class="text-xs font-bold text-slate-800">{{ currentUser.name }}</p>
+                                    <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
                                 </div>
-                            </transition>
-                        </div>
-                        <div v-if="!sidebarCollapsed" class="flex-1 min-w-0">
-                            <p class="text-sm font-bold text-white truncate">{{ currentUser.name }}</p>
-                            <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
-                        </div>
+                                <button v-for="emp in employees" :key="emp.id"
+                                        @click="currentUser = emp; showUserMenu = false" 
+                                        class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition flex items-center gap-2">
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0" 
+                                          :style="{ backgroundColor: emp.color }">
+                                        {{ getInitials(emp) }}
+                                    </span>
+                                    <span class="truncate">{{ emp.name }}</span>
+                                </button>
+                            </div>
+                        </transition>
                     </div>
-                    
-                    <label v-if="!sidebarCollapsed" class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
-                    <select v-model="role" v-if="!sidebarCollapsed" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        <option value="contractor">👷 Подрядчик</option>
-                        <option value="client">🕵️ Заказчик</option>
-                    </select>
+                    <div :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-white truncate">{{ currentUser.name }}</p>
+                        <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
+                    </div>
                 </div>
+                
+                <label :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
+                <select v-model="role" :class="{'collapsed-text': sidebarCollapsed && !isMobile}" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    <option value="contractor">👷 Подрядчик</option>
+                    <option value="client">🕵️ Заказчик</option>
+                </select>
             </div>
         </aside>
 
@@ -567,11 +603,16 @@
                     </div>
                     
                     <div class="border-b border-slate-200 bg-slate-50/50 shrink-0">
-                        <div class="flex px-4">
+                        <div class="flex px-4 overflow-x-auto">
                             <button @click="modalTab = 'preview'" 
                                     :class="modalTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
                                     class="px-4 py-3 text-sm font-medium transition whitespace-nowrap">
                                 <i class="fas fa-eye mr-2"></i>Предпросмотр
+                            </button>
+                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'editor'" 
+                                    :class="modalTab === 'editor' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-4 py-3 text-sm font-medium transition whitespace-nowrap">
+                                <i class="fas fa-code mr-2"></i>Редактор
                             </button>
                             <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'validation'" 
                                     :class="modalTab === 'validation' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
@@ -646,7 +687,47 @@
                             </div>
                         </div>
                         
-                        <!-- VALIDATION TAB (NEW) -->
+                        <!-- EDITOR TAB (RESTORED) -->
+                        <div v-if="modalTab === 'editor' && selectedDoc.fileType === 'xml'" class="space-y-4">
+                            <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+                                <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+                                    <span class="text-[11px] text-slate-300">{{ selectedDoc.number }}.xml</span>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="formatXML" class="text-[10px] text-slate-400 hover:text-white transition px-2 py-1 rounded hover:bg-slate-700">
+                                            <i class="fas fa-indent mr-1"></i>Форматировать
+                                        </button>
+                                        <button @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">
+                                            <i class="fas fa-save mr-1"></i>Сохранить
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea v-model="xmlEditorContent" 
+                                          class="code-editor w-full h-80 sm:h-96 bg-slate-900 text-slate-100 p-4 outline-none resize-none"
+                                          spellcheck="false"></textarea>
+                            </div>
+                            
+                            <!-- Show errors for invalid files -->
+                            <div v-if="selectedDoc.status === 'invalid'" class="bg-rose-50 rounded-xl p-4 border border-rose-200">
+                                <h4 class="text-sm font-bold text-rose-700 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                    Ошибки в XML (строки подсвечены)
+                                </h4>
+                                <div class="space-y-2 text-xs">
+                                    <div class="p-2 bg-white rounded border border-rose-200">
+                                        <span class="text-rose-600 font-mono">Строка 5:</span>
+                                        <span class="text-slate-600 ml-2">Элемент <code class="bg-rose-100 px-1 rounded">&lt;Contractor&gt;</code> отсутствует в схеме Минстроя</span>
+                                    </div>
+                                    <div class="p-2 bg-white rounded border border-rose-200">
+                                        <span class="text-rose-600 font-mono">Строка 12:</span>
+                                        <span class="text-slate-600 ml-2">Обязательный атрибут <code class="bg-rose-100 px-1 rounded">date</code> не указан</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="text-[10px] text-slate-400">⚠️ Изменения сохраняются локально. Для применения требуется повторная валидация.</p>
+                        </div>
+                        
+                        <!-- VALIDATION TAB -->
                         <div v-if="modalTab === 'validation' && selectedDoc.fileType === 'xml'" class="space-y-4">
                             <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
                                 <h4 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
@@ -890,7 +971,6 @@
 
                 const newProjectForm = ref({ name: '', color: '#3b82f6', icon: '🏢' });
                 
-                // Validation checks for XML
                 const validationChecks = ref([]);
                 
                 const projectColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -905,7 +985,6 @@
                 const newVersionFileInput = ref(null);
                 const xmlEditorContent = ref('');
 
-                // FIXED COUNTER: Correct document counting
                 const getDocsCountForOrder = (orderId) => {
                     return documents.value.filter(d => d.orderId === orderId).length;
                 };
@@ -930,9 +1009,10 @@
                         orders.value = [
                             { id: 'order-1', name: 'Заказ №2026-001', projectId: 'park-2', docsCount: 2 },
                             { id: 'order-2', name: 'Заказ №2026-002', projectId: 'park-2', docsCount: 0 },
-                            { id: 'order-3', name: 'Заказ №БЦ-045', projectId: 'business-center', docsCount: 0 }
+                            { id: 'order-3', name: 'Заказ №БЦ-045', projectId: 'business-center', docsCount: 1 }
                         ];
                         
+                        // ADDED INVALID FILE EXAMPLE
                         documents.value = [
                             { 
                                 id: 1, number: 'АКТ-001/2026', status: 'valid', version: 2, 
@@ -950,11 +1030,20 @@
                                 projectId: 'park-2', orderId: 'order-1', responsibleId: 'elena',
                                 fileType: 'pdf',
                                 versions: [{ id: 3, number: 1, uploadedAt: '2026-03-25T09:15:00', uploadedBy: 'elena', comment: 'Смета' }]
+                            },
+                            // INVALID XML FILE FOR DEMO
+                            { 
+                                id: 3, number: 'ЖУР-БЕТ-042', status: 'invalid', version: 1, 
+                                updatedAt: '2026-03-24T11:30:00', 
+                                projectId: 'business-center', orderId: 'order-3', responsibleId: 'mikhail',
+                                fileType: 'xml',
+                                versions: [{ id: 4, number: 1, uploadedAt: '2026-03-24T11:30:00', uploadedBy: 'mikhail', comment: 'Журнал бетонных работ' }]
                             }
                         ];
                         
                         auditLogs.value = [
-                            { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', orderId: 'order-1', message: 'Загружен: АКТ-001/2026', time: '2026-03-26T14:00:00' }
+                            { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', orderId: 'order-1', message: 'Загружен: АКТ-001/2026', time: '2026-03-26T14:00:00' },
+                            { id: 2, type: 'error', userId: 'system', projectId: 'business-center', orderId: 'order-3', message: 'Ошибка валидации: ЖУР-БЕТ-042', time: '2026-03-24T11:30:00' }
                         ];
                         
                         apiConnected.value = true;
@@ -980,12 +1069,12 @@
                 );
 
                 const sidebarClasses = computed(() => {
-                    const base = 'sidebar-transition z-40 h-full bg-slate-900 text-white shadow-xl sidebar-wrapper';
+                    const base = 'sidebar-transition z-40 h-full bg-slate-900 text-white shadow-xl sidebar-container';
                     if (isMobile.value) {
                         return `${base} fixed top-0 left-0 w-72 transform ${sidebarOpen.value ? 'translate-x-0' : '-translate-x-full'}`;
                     }
                     if (sidebarCollapsed.value) {
-                        return `${base} w-20`;
+                        return `${base} w-20 sidebar-collapsed`;
                     }
                     return `${base} w-72`;
                 });
@@ -1202,20 +1291,21 @@
 
                 // XML Validation simulation
                 const runValidationChecks = () => {
+                    const isValid = selectedDoc.value?.status === 'valid';
+                    
                     const checks = [
                         { name: 'Проверка структуры XML', status: 'valid', message: 'XML документ имеет корректную структуру' },
-                        { name: 'Проверка XSD схемы Минстроя', status: 'valid', message: 'Документ соответствует XSD-схеме' },
-                        { name: 'Проверка обязательных полей', status: 'valid', message: 'Все обязательные поля заполнены' },
+                        { name: 'Проверка XSD схемы Минстроя', status: isValid ? 'valid' : 'invalid', message: isValid ? 'Документ соответствует XSD-схеме' : 'Найдены несоответствия схеме' },
+                        { name: 'Проверка обязательных полей', status: isValid ? 'valid' : 'invalid', message: isValid ? 'Все обязательные поля заполнены' : 'Отсутствуют обязательные атрибуты' },
                         { name: 'Проверка кодировки', status: 'valid', message: 'Кодировка UTF-8' },
                         { name: 'Проверка ссылок', status: 'processing', message: 'Проверка внешних ссылок...' }
                     ];
                     
                     validationChecks.value = checks;
                     
-                    // Simulate async validation
                     setTimeout(() => {
-                        validationChecks.value[4].status = 'valid';
-                        validationChecks.value[4].message = 'Все ссылки корректны';
+                        validationChecks.value[4].status = isValid ? 'valid' : 'invalid';
+                        validationChecks.value[4].message = isValid ? 'Все ссылки корректны' : 'Обнаружены битые ссылки';
                     }, 2000);
                 };
 
@@ -1351,10 +1441,28 @@
 
                 const openModal = (doc) => {
                     selectedDoc.value = { ...doc, versions: [...doc.versions] };
-                    xmlEditorContent.value = generateMockFileContent(doc.fileType, doc.number);
+                    
+                    // Set editor content based on status
+                    if (doc.status === 'invalid') {
+                        xmlEditorContent.value = `<?xml version="1.0" encoding="UTF-8"?>
+<Document>
+  <Number>${doc.number}</Number>
+  <Contractor>ООО "СтройМастер"</Contractor>
+  <Date></Date>
+  <Status>Invalid</Status>
+</Document>`;
+                    } else {
+                        xmlEditorContent.value = `<?xml version="1.0" encoding="UTF-8"?>
+<Document>
+  <Number>${doc.number}</Number>
+  <Status>Valid</Status>
+  <Contractor>ООО "Артвелл"</Contractor>
+  <Date>2026-03-26</Date>
+</Document>`;
+                    }
+                    
                     modalTab.value = 'preview';
                     
-                    // Run validation checks if XML
                     if (doc.fileType === 'xml') {
                         runValidationChecks();
                     }
