@@ -197,15 +197,15 @@
           {{ getProjectDocsCount(project.id) }}
         </span>
         <div class="action-buttons flex gap-1 opacity-0 group-hover:opacity-100 transition text-element shrink-0" v-if="role === 'contractor'">
+          <button @click.stop="openNewOrderModal(project)" 
+            class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-emerald-400 transition"
+            title="Добавить заказ">
+            <i class="fas fa-folder-plus text-[10px]"></i>
+          </button>
           <button @click.stop="openEditProjectModal(project)" 
             class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-400 transition"
             title="Редактировать">
             <i class="fas fa-pen text-[10px]"></i>
-          </button>
-          <button @click.stop="deleteProject(project.id)" 
-            class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-400 transition"
-            title="Удалить">
-            <i class="fas fa-trash text-[10px]"></i>
           </button>
         </div>
       </div>
@@ -226,6 +226,13 @@
             <i class="fas fa-plus text-[8px]"></i>
           </button>
         </div>
+        
+        <!-- Add Order Button -->
+        <button v-if="role === 'contractor'" @click="openNewOrderModal(project)"
+          class="w-full flex items-center gap-2 px-3 py-1.5 rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-800/50 text-[11px] transition border border-dashed border-slate-700 mt-1 ml-2">
+          <i class="fas fa-folder-plus text-[10px]"></i>
+          <span>Добавить заказ</span>
+        </button>
         
         <!-- Documents (when order expanded) -->
         <div v-for="order in getOrdersByProject(project.id)" :key="'docs-'+order.id">
@@ -491,6 +498,35 @@
 </div>
 </transition>
 
+<!-- ========== MODAL: CREATE ORDER ========== -->
+<transition name="modal">
+<div v-if="showNewOrder" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="showNewOrder = false">
+  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+      <h3 class="text-lg font-black text-slate-800">Создать заказ</h3>
+      <button @click="showNewOrder = false" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Проект</label>
+        <input type="text" :value="getProjectName(newOrder.projectId)" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-500" readonly>
+      </div>
+      <div>
+        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Название заказа</label>
+        <input v-model="newOrder.name" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: Заказ №2026-003">
+      </div>
+    </div>
+    <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
+      <button @click="showNewOrder = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
+      <button @click="createOrder" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold transition">Создать</button>
+    </div>
+  </div>
+</div>
+</transition>
+
 <!-- ========== MODAL: EDIT PROJECT ========== -->
 <transition name="modal">
 <div v-if="showEditProject" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="showEditProject = false">
@@ -749,6 +785,7 @@ setup() {
   const loading = ref(false);
   const error = ref(null);
   const showCreateProject = ref(false);
+  const showNewOrder = ref(false);
   const showEditProject = ref(false);
   const showQuickUpload = ref(false);
 
@@ -787,6 +824,7 @@ setup() {
 
   const currentUser = ref(employees.value[0]);
   const newProject = ref({ name: '', customerId: '', responsibleId: 'anna' });
+  const newOrder = ref({ projectId: '', name: '' });
   const editProject = ref({ id: '', name: '', customerId: '', responsibleId: '' });
   const uploadForm = ref({ projectId: 'park-2', orderId: 'order-1', responsibleId: 'anna', comment: '', fileName: '', fileType: '' });
   const quickUpload = ref({ orderId: '', number: '', fileName: '', fileType: '' });
@@ -890,12 +928,24 @@ setup() {
     showCreateProject.value = false;
   };
 
-  const deleteProject = (id) => {
-    if (confirm('Удалить проект?')) {
-      projects.value = projects.value.filter(p => p.id !== id);
-      if (selectedProject.value === id) selectedProject.value = 'all';
-      expandedProjects.value = expandedProjects.value.filter(pid => pid !== id);
+  const openNewOrderModal = (project) => {
+    newOrder.value = { projectId: project.id, name: '' };
+    showNewOrder.value = true;
+  };
+
+  const createOrder = () => {
+    if (!newOrder.value.name) { alert('Введите название заказа'); return; }
+    orders.value.push({
+      id: 'order-' + Date.now(),
+      name: newOrder.value.name,
+      projectId: newOrder.value.projectId
+    });
+    // Auto-expand project to show new order
+    if (!expandedProjects.value.includes(newOrder.value.projectId)) {
+      expandedProjects.value.push(newOrder.value.projectId);
     }
+    newOrder.value = { projectId: '', name: '' };
+    showNewOrder.value = false;
   };
 
   const openEditProjectModal = (project) => {
@@ -1042,6 +1092,7 @@ setup() {
     if (e.key === 'Escape') {
       if (selectedDoc.value) closeModal();
       if (showCreateProject.value) showCreateProject.value = false;
+      if (showNewOrder.value) showNewOrder.value = false;
       if (showEditProject.value) showEditProject.value = false;
       if (showQuickUpload.value) closeQuickUpload();
     }
@@ -1060,13 +1111,13 @@ setup() {
   return {
     role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
     selectedProject, selectedOrder, expandedProjects, expandedOrders, sidebarCollapsed, isMobile, sidebarOpen,
-    apiConnected, loading, error, showCreateProject, showEditProject, showQuickUpload,
+    apiConnected, loading, error, showCreateProject, showNewOrder, showEditProject, showQuickUpload,
     projects, orders, employees, currentUser, documents, auditLogs,
-    newProject, editProject, uploadForm, quickUpload, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
+    newProject, newOrder, editProject, uploadForm, quickUpload, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
     filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, canQuickUpload,
     fileInput, quickFileInput, xmlEditorContent, sidebarClasses,
     toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, selectOrder, onProjectChange, toggleProjectExpand, toggleOrderExpand,
-    toggleUserMenu, createProject, deleteProject, openEditProjectModal, saveEditProject,
+    toggleUserMenu, createProject, openNewOrderModal, createOrder, openEditProjectModal, saveEditProject,
     openQuickUpload, closeQuickUpload, triggerQuickUpload, handleQuickFile, submitQuickUpload,
     downloadFile, downloadVersion, runValidationChecks, formatXML, saveXMLEdit,
     triggerUpload, handleFile, resetUploadForm, submitUpload,
