@@ -13,7 +13,7 @@
         [v-cloak] { display: none; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
         
         .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
         .modal-enter-from, .modal-leave-to { opacity: 0; }
@@ -21,61 +21,72 @@
         .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         
-        /* ===== SIDEBAR LAYOUT (FLEXBOX - CORRECT) ===== */
         .sidebar-wrapper {
             display: flex;
             flex-direction: column;
             height: 100vh;
             overflow: hidden;
-            position: relative;
         }
         
-        .sidebar-header {
-            flex: 0 0 auto;
-            border-bottom: 1px solid #1e293b;
-        }
-        
+        .sidebar-header { flex: 0 0 auto; }
         .sidebar-content {
             flex: 1 1 auto;
             overflow-y: auto;
             overflow-x: hidden;
             min-height: 0;
-            padding: 0.5rem 1rem;
+            padding: 1rem;
         }
-        
         .sidebar-footer {
             flex: 0 0 auto;
             margin-top: auto;
             border-top: 1px solid #1e293b;
-            background: rgba(15, 23, 42, 0.9);
             padding: 1rem;
         }
         
         .sidebar-transition { transition: width 0.3s ease; }
         
-        .collapsed-stripe {
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 3px;
-            background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
-            pointer-events: none;
-            z-index: 10;
+        /* Navigation buttons - Active (light background) */
+        .nav-button-active {
+            background: rgba(59, 130, 246, 0.15);
+            color: white;
+            border-left: 3px solid #3b82f6;
+        }
+        .nav-button-active:hover {
+            background: rgba(59, 130, 246, 0.2);
         }
         
-        /* Hide text when collapsed - Show ONLY icons */
+        /* Navigation buttons - Inactive (dark/transparent) */
+        .nav-button-inactive {
+            background: transparent;
+            color: #94a3b8;
+            border-left: 3px solid transparent;
+        }
+        .nav-button-inactive:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+        
+        /* Hide elements when collapsed */
         .sidebar-collapsed .text-element { display: none !important; }
-        .sidebar-collapsed .icon-wrapper { display: flex !important; justify-content: center; width: 100%; }
-        .sidebar-collapsed .nav-text { display: none !important; }
+        .sidebar-collapsed .user-details { display: none !important; }
+        .sidebar-collapsed .project-badge { display: none !important; }
         
         /* Tree view */
-        .tree-item { padding-left: 1.25rem; border-left: 2px solid #334155; margin-left: 0.5rem; }
+        .tree-item {
+            padding-left: 1.5rem;
+            border-left: 2px solid #334155;
+            margin-left: 0.5rem;
+        }
         .tree-toggle { transition: transform 0.2s ease; }
         .tree-toggle.rotated { transform: rotate(90deg); }
         
         /* Code editor */
-        .code-editor { 
-            font-family: 'Fira Code', 'Consolas', monospace; 
-            font-size: 0.75rem; line-height: 1.6; white-space: pre; tab-size: 2;
+        .code-editor {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            white-space: pre;
+            tab-size: 2;
         }
         
         /* Validation animation */
@@ -84,17 +95,6 @@
             50% { opacity: 0.5; }
         }
         .validating { animation: validate-pulse 1.5s ease-in-out infinite; }
-        
-        /* Loading skeleton */
-        .skeleton {
-            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
@@ -102,105 +102,94 @@
         
         <!-- ========== SIDEBAR ========== -->
         <aside :class="sidebarClasses" class="bg-slate-900 text-white shadow-xl z-40 fixed md:relative sidebar-wrapper">
-            <!-- Blue stripe when collapsed -->
-            <div v-if="sidebarCollapsed && !isMobile" class="collapsed-stripe"></div>
             
-            <!-- Mobile overlay -->
-            <div v-if="sidebarOpen && isMobile" @click="toggleSidebar" class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
-            
-            <!-- HEADER: Logo + Navigation -->
-            <div class="sidebar-header p-5">
-                <div class="flex items-center justify-between mb-1">
+            <!-- HEADER: Logo -->
+            <div class="sidebar-header p-5 border-b border-slate-800">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20 shrink-0">
+                        <div class="bg-blue-600 p-2 rounded-lg shrink-0">
                             <i class="fas fa-layer-group text-xl text-white"></i>
                         </div>
-                        <span class="text-element font-bold text-lg tracking-tight whitespace-nowrap">ARTWELL <span class="text-blue-400">XML</span></span>
+                        <div>
+                            <span class="text-element font-bold text-lg whitespace-nowrap">ARTWELL <span class="text-blue-400">XML</span></span>
+                            <p class="text-element text-[10px] text-slate-400">Система верификации</p>
+                        </div>
                     </div>
                     <button v-if="!isMobile" @click="toggleSidebarCollapse" 
-                            class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-800 transition text-slate-400 shrink-0 ml-auto" 
+                            class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-800 transition text-slate-400 shrink-0 ml-auto"
                             :title="sidebarCollapsed ? 'Развернуть' : 'Свернуть'">
                         <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" class="text-xs"></i>
                     </button>
                 </div>
-                <p class="text-element text-[10px] text-slate-400 ml-11">Система верификации</p>
             </div>
             
-            <!-- NAVIGATION -->
-            <nav class="sidebar-header p-4 space-y-1">
-                <button @click="navigateTo('registry')" :class="navClass('registry')" class="w-full">
-                    <div class="icon-wrapper w-10 h-10 rounded-xl justify-center shrink-0 mx-auto" :class="currentTab === 'registry' ? 'bg-blue-600' : ''">
-                        <i class="fas fa-list-ul text-lg"></i>
-                    </div>
-                    <span class="text-element nav-text ml-3 whitespace-nowrap">Реестр документов</span>
+            <!-- NAVIGATION: Buttons with light/dark background -->
+            <nav class="sidebar-header p-4 space-y-2">
+                <button @click="navigateTo('registry')" 
+                        :class="currentTab === 'registry' ? 'nav-button-active' : 'nav-button-inactive'"
+                        class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left">
+                    <i class="fas fa-list-ul text-lg shrink-0 w-6 text-center"></i>
+                    <span class="text-element nav-text font-medium">Реестр документов</span>
                 </button>
-                <button @click="navigateTo('upload')" v-if="role === 'contractor'" :class="navClass('upload')" class="w-full">
-                    <div class="icon-wrapper w-10 h-10 rounded-xl justify-center shrink-0 mx-auto" :class="currentTab === 'upload' ? 'bg-blue-600' : ''">
-                        <i class="fas fa-cloud-upload-alt text-lg"></i>
-                    </div>
-                    <span class="text-element nav-text ml-3 whitespace-nowrap">Загрузка файлов</span>
+                
+                <button @click="navigateTo('upload')" v-if="role === 'contractor'"
+                        :class="currentTab === 'upload' ? 'nav-button-active' : 'nav-button-inactive'"
+                        class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left">
+                    <i class="fas fa-cloud-upload-alt text-lg shrink-0 w-6 text-center"></i>
+                    <span class="text-element nav-text font-medium">Загрузка файлов</span>
                 </button>
-                <button @click="navigateTo('audit')" :class="navClass('audit')" class="w-full">
-                    <div class="icon-wrapper w-10 h-10 rounded-xl justify-center shrink-0 mx-auto" :class="currentTab === 'audit' ? 'bg-blue-600' : ''">
-                        <i class="fas fa-history text-lg"></i>
-                    </div>
-                    <span class="text-element nav-text ml-3 whitespace-nowrap">Аудит-лог</span>
+                
+                <button @click="navigateTo('audit')"
+                        :class="currentTab === 'audit' ? 'nav-button-active' : 'nav-button-inactive'"
+                        class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left">
+                    <i class="fas fa-history text-lg shrink-0 w-6 text-center"></i>
+                    <span class="text-element nav-text font-medium">Аудит-лог</span>
                 </button>
             </nav>
 
-            <!-- PROJECTS (Scrollable middle section) -->
+            <!-- PROJECTS: Tree structure with document counts -->
             <div class="sidebar-content">
-                <div class="flex items-center justify-between mb-3 px-1 text-element">
-                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Проекты</span>
-                    <div class="flex items-center gap-2">
-                        <button v-if="selectedProject && selectedProject !== 'all'" @click="selectProject('all')" 
-                                class="text-[10px] text-blue-400 hover:text-blue-300 font-medium">Сброс</button>
-                        <button v-if="role === 'contractor'" @click="openNewProjectModal" 
-                                class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition"
-                                title="Создать проект">
-                            <i class="fas fa-plus text-[10px]"></i>
-                        </button>
-                    </div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider text-element">Проекты</span>
+                    <button v-if="role === 'contractor'" @click="openNewProjectModal"
+                            class="w-6 h-6 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition text-element"
+                            title="Создать проект">
+                        <i class="fas fa-plus text-[10px]"></i>
+                    </button>
                 </div>
                 
                 <!-- All Projects -->
-                <div @click="selectProject('all')" 
-                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
-                     :class="!selectedProject || selectedProject === 'all' 
-                        ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'">
-                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                        <i class="fas fa-th-large"></i>
-                    </div>
+                <div @click="selectProject('all')"
+                     :class="!selectedProject || selectedProject === 'all' ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-3' : 'text-slate-400 hover:text-white hover:bg-slate-800 pl-3'"
+                     class="flex items-center gap-3 py-2 rounded-lg cursor-pointer mb-1 transition">
+                    <i class="fas fa-th-large text-sm shrink-0 w-5"></i>
                     <span class="text-element text-sm font-medium flex-1 truncate">Все проекты</span>
-                    <span class="text-element text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
+                    <span class="text-element project-badge text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
                 </div>
                 
-                <!-- Project List -->
+                <!-- Project List with Tree -->
                 <div v-for="project in projects" :key="project.id" class="mb-2">
                     <div @click="selectProject(project.id)"
-                         class="flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
-                         :class="selectedProject === project.id 
-                            ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'">
+                         :class="selectedProject === project.id ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-3' : 'text-slate-400 hover:text-white hover:bg-slate-800 pl-3'"
+                         class="flex items-center gap-3 py-2 rounded-lg cursor-pointer transition">
                         
-                        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
-                             :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
-                            <span :style="{ color: project.color }">{{ project.icon }}</span>
+                        <div class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold shrink-0"
+                             :style="{ background: project.color + '20', color: project.color }">
+                            {{ project.icon }}
                         </div>
                         
                         <span class="text-element text-sm font-medium flex-1 truncate">{{ project.name }}</span>
-                        <span class="text-element text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                        <span class="text-element project-badge text-[10px] px-2 py-0.5 rounded-full shrink-0"
                               :style="{ backgroundColor: project.color + '30', color: project.color }">
                             {{ getProjectDocsCount(project.id) }}
                         </span>
                     </div>
                     
                     <!-- Orders Tree (nested) -->
-                    <div class="text-element" v-if="!sidebarCollapsed && (selectedProject === project.id || expandedProjects.includes(project.id))" class="ml-4 space-y-1">
-                        <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item">
-                            <div @click="toggleOrderExpand(order.id)" 
-                                 class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-slate-300 hover:text-white hover:bg-slate-800 text-xs">
+                    <div class="text-element" v-if="!sidebarCollapsed && (selectedProject === project.id || expandedProjects.includes(project.id))">
+                        <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item mb-1">
+                            <div @click="toggleOrderExpand(order.id)"
+                                 class="flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer text-slate-300 hover:text-white hover:bg-slate-800 text-xs transition">
                                 <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
                                 <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
                                 <span class="truncate flex-1">{{ order.name }}</span>
@@ -211,7 +200,7 @@
                             <div v-if="expandedOrders.includes(order.id)" class="ml-4 space-y-1 mt-1">
                                 <div v-for="doc in getDocumentsByOrder(order.id)" :key="doc.id"
                                      @click="openModal(doc)"
-                                     class="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50 text-[11px]">
+                                     class="flex items-center gap-2 px-3 py-1 rounded cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50 text-[11px] transition">
                                     <i :class="getFileIcon(doc.fileType)" class="text-[10px] shrink-0" :style="{color: getFileIconColor(doc.fileType)}"></i>
                                     <span class="truncate flex-1">{{ doc.number }}</span>
                                     <span :class="statusBadgeMini(doc.status)" class="shrink-0 text-[9px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
@@ -222,12 +211,12 @@
                 </div>
             </div>
 
-            <!-- FOOTER: User (FIXED at bottom - NEVER MOVES) -->
+            <!-- FOOTER: User (Full details when expanded, only initials when collapsed) -->
             <div class="sidebar-footer">
                 <div class="flex items-center gap-3 mb-3">
                     <div class="relative shrink-0">
-                        <button @click="toggleUserMenu" 
-                                class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10 hover:ring-blue-400 transition" 
+                        <button @click="toggleUserMenu"
+                                class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10 hover:ring-blue-400 transition"
                                 :style="{ backgroundColor: currentUser.color }">
                             {{ getInitials(currentUser) }}
                         </button>
@@ -239,9 +228,9 @@
                                     <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
                                 </div>
                                 <button v-for="emp in employees" :key="emp.id"
-                                        @click="currentUser = emp; showUserMenu = false" 
+                                        @click="currentUser = emp; showUserMenu = false"
                                         class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition flex items-center gap-2">
-                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0" 
+                                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold shrink-0"
                                           :style="{ backgroundColor: emp.color }">
                                         {{ getInitials(emp) }}
                                     </span>
@@ -250,14 +239,14 @@
                             </div>
                         </transition>
                     </div>
-                    <div class="flex-1 min-w-0 text-element">
+                    <div class="flex-1 min-w-0 text-element user-details">
                         <p class="text-sm font-bold text-white truncate">{{ currentUser.name }}</p>
                         <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
                     </div>
                 </div>
                 
-                <label class="text-element text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
-                <select v-model="role" class="text-element w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                <label class="text-element user-details text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
+                <select v-model="role" class="text-element user-details w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="contractor">👷 Подрядчик</option>
                     <option value="client">🕵️ Заказчик</option>
                 </select>
@@ -265,9 +254,9 @@
         </aside>
 
         <!-- ========== MAIN AREA ========== -->
-        <main class="flex-1 flex flex-col h-screen overflow-hidden w-full">
-            <!-- Top Nav -->
-            <header class="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm shrink-0">
+        <main class="flex-1 flex flex-col h-screen overflow-hidden">
+            <!-- Top Header -->
+            <header class="h-14 bg-white border-b flex items-center justify-between px-4 shrink-0">
                 <div class="flex items-center gap-3">
                     <button @click="toggleSidebar" class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition">
                         <i class="fas fa-bars text-slate-600"></i>
@@ -286,25 +275,20 @@
                         <span class="w-1.5 h-1.5 rounded-full" :class="apiConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'"></span>
                         {{ apiConnected ? 'API подключено' : 'Локальный режим' }}
                     </div>
-                    <div v-if="currentTab === 'registry'" class="relative hidden sm:block">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
-                        <input type="text" v-model="searchQuery" placeholder="Поиск..." 
-                               class="w-48 pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
+                    <div class="relative hidden sm:block">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input v-model="searchQuery" placeholder="Поиск..." class="w-48 pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500">
                     </div>
-                    <button @click="toggleUserMenu" class="sm:hidden w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white shrink-0" 
-                            :style="{ backgroundColor: currentUser.color }">
-                        {{ getInitials(currentUser) }}
-                    </button>
                 </div>
             </header>
 
-            <!-- Scrollable Content -->
+            <!-- Content Area -->
             <div class="flex-1 overflow-y-auto p-4 sm:p-5">
                 
                 <!-- Loading State -->
                 <div v-if="loading" class="space-y-4">
-                    <div class="h-12 bg-slate-800 rounded-xl skeleton"></div>
-                    <div class="h-96 bg-slate-800 rounded-2xl skeleton"></div>
+                    <div class="h-12 bg-slate-200 rounded-xl skeleton"></div>
+                    <div class="h-96 bg-slate-200 rounded-2xl skeleton"></div>
                 </div>
                 
                 <!-- Error State -->
@@ -401,23 +385,23 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Проект</label>
-                                <select v-model="uploadForm.projectId" @change="onProjectChange" class="w-full bg-slate-50 border rounded-lg px-3 py-2.5 text-sm">
+                                <select v-model="uploadForm.projectId" @change="onProjectChange" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
                                     <option v-for="p in projects" :value="p.id">{{ p.name }}</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Заказ</label>
-                                <select v-model="uploadForm.orderId" class="w-full bg-slate-50 border rounded-lg px-3 py-2.5 text-sm">
+                                <select v-model="uploadForm.orderId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
                                     <option v-for="o in getOrdersByProject(uploadForm.projectId)" :value="o.id">{{ o.name }}</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Ответственный</label>
-                                <select v-model="uploadForm.responsibleId" class="w-full bg-slate-50 border rounded-lg px-3 py-2.5 text-sm">
+                                <select v-model="uploadForm.responsibleId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm">
                                     <option v-for="emp in employees" :value="emp.id">{{ emp.name }}</option>
                                 </select>
                             </div>
-                            <div @click="triggerUpload" class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-8 text-center hover:border-blue-400 cursor-pointer">
+                            <div @click="triggerUpload" class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-8 text-center hover:border-blue-400 cursor-pointer transition">
                                 <input ref="fileInput" type="file" @change="handleFile" class="hidden" accept=".xml,.pdf,.doc,.docx">
                                 <i class="fas fa-cloud-upload-alt text-3xl text-blue-500 mb-2"></i>
                                 <p class="text-sm font-bold">Выберите файл</p>
@@ -428,9 +412,9 @@
                                     <button @click.stop="resetUploadForm" class="text-slate-400 hover:text-rose-500"><i class="fas fa-times"></i></button>
                                 </div>
                             </div>
-                            <div class="flex justify-end gap-3 pt-4">
-                                <button @click="resetUploadForm" class="px-4 py-2 text-sm text-slate-600">Сбросить</button>
-                                <button @click="submitUpload" :disabled="!canUpload || uploading" class="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold disabled:opacity-50">
+                            <div class="flex justify-end gap-3 pt-4 border-t">
+                                <button @click="resetUploadForm" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Сбросить</button>
+                                <button @click="submitUpload" :disabled="!canUpload || uploading" class="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold disabled:opacity-50 transition">
                                     {{ uploading ? 'Проверка...' : 'Загрузить' }}
                                 </button>
                             </div>
@@ -441,7 +425,7 @@
                 <!-- TAB: AUDIT LOG -->
                 <section v-else-if="currentTab === 'audit'" class="max-w-3xl mx-auto">
                     <div class="space-y-3">
-                        <div v-for="log in filteredAuditLogs" :key="log.id" class="bg-white p-4 rounded-xl shadow-sm border flex items-start gap-4">
+                        <div v-for="log in filteredAuditLogs" :key="log.id" class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-start gap-4">
                             <div :class="logIconClass(log.type)" class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
                                 <i :class="logIcon(log.type)"></i>
                             </div>
@@ -480,16 +464,16 @@
                     <!-- Tabs -->
                     <div class="border-b border-slate-200 bg-slate-50/50 shrink-0">
                         <div class="flex px-4 overflow-x-auto">
-                            <button @click="modalTab = 'preview'" :class="modalTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                            <button @click="modalTab = 'preview'" :class="modalTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap transition">
                                 <i class="fas fa-eye mr-2"></i>Предпросмотр
                             </button>
-                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'editor'" :class="modalTab === 'editor' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'editor'" :class="modalTab === 'editor' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap transition">
                                 <i class="fas fa-code mr-2"></i>Редактор
                             </button>
-                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'validation'" :class="modalTab === 'validation' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'validation'" :class="modalTab === 'validation' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap transition">
                                 <i class="fas fa-check-circle mr-2"></i>Валидация
                             </button>
-                            <button @click="modalTab = 'versions'" :class="modalTab === 'versions' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap">
+                            <button @click="modalTab = 'versions'" :class="modalTab === 'versions' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap transition">
                                 <i class="fas fa-code-branch mr-2"></i>Версии
                             </button>
                         </div>
@@ -501,7 +485,7 @@
                         <!-- PREVIEW TAB -->
                         <div v-if="modalTab === 'preview'" class="space-y-5">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="bg-slate-50 rounded-xl p-4 border">
+                                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                     <label class="block text-[10px] uppercase font-black text-slate-400 mb-3">Ответственный</label>
                                     <div class="flex items-center gap-3">
                                         <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold shrink-0" :style="{ backgroundColor: getUserColor(selectedDoc.responsibleId) }">
@@ -513,7 +497,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="bg-slate-50 rounded-xl p-4 border">
+                                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
                                     <label class="block text-[10px] uppercase font-black text-slate-400 mb-3">Контекст</label>
                                     <div class="space-y-2 text-sm">
                                         <div class="flex justify-between"><span class="text-slate-500">Проект:</span> <span class="font-medium">{{ getProjectName(selectedDoc.projectId) }}</span></div>
@@ -545,13 +529,13 @@
                         <!-- EDITOR TAB -->
                         <div v-if="modalTab === 'editor' && selectedDoc.fileType === 'xml'" class="space-y-4">
                             <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
-                                <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b">
+                                <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
                                     <span class="text-[11px] text-slate-300">{{ selectedDoc.number }}.xml</span>
                                     <div class="flex gap-2">
-                                        <button @click="formatXML" class="text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700">
+                                        <button @click="formatXML" class="text-[10px] text-slate-400 hover:text-white px-2 py-1 rounded hover:bg-slate-700 transition">
                                             <i class="fas fa-indent mr-1"></i>Форматировать
                                         </button>
-                                        <button @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded">
+                                        <button @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">
                                             <i class="fas fa-save mr-1"></i>Сохранить
                                         </button>
                                     </div>
@@ -576,10 +560,10 @@
                         
                         <!-- VALIDATION TAB -->
                         <div v-if="modalTab === 'validation' && selectedDoc.fileType === 'xml'" class="space-y-4">
-                            <div class="bg-slate-50 rounded-xl p-4 border">
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
                                 <h4 class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-shield-alt text-blue-600 mr-2"></i>Проверка XSD схемам</h4>
                                 <div class="space-y-3">
-                                    <div v-for="(check, idx) in validationChecks" :key="idx" class="flex items-start gap-3 p-3 bg-white rounded-lg border">
+                                    <div v-for="(check, idx) in validationChecks" :key="idx" class="flex items-start gap-3 p-3 bg-white rounded-lg border border-slate-200">
                                         <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
                                              :class="check.status === 'valid' ? 'bg-emerald-100 text-emerald-600' : check.status === 'invalid' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600 validating'">
                                             <i :class="check.status === 'valid' ? 'fas fa-check text-xs' : check.status === 'invalid' ? 'fas fa-times text-xs' : 'fas fa-spinner fa-spin text-xs'"></i>
@@ -595,7 +579,7 @@
                         
                         <!-- VERSIONS TAB -->
                         <div v-if="modalTab === 'versions'" class="space-y-3">
-                            <div v-for="version in [...selectedDoc.versions].reverse()" :key="version.id" class="p-4 bg-slate-50 rounded-xl border hover:border-blue-200 transition">
+                            <div v-for="version in [...selectedDoc.versions].reverse()" :key="version.id" class="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition">
                                 <div class="flex items-center justify-between mb-2">
                                     <span class="text-sm font-black text-slate-700 bg-white px-3 py-1 rounded-lg border">v{{ version.number }}.0</span>
                                     <span class="text-[10px] text-slate-400">{{ formatTime(version.uploadedAt) }}</span>
@@ -607,7 +591,7 @@
                                     </div>
                                     <span class="text-slate-600">{{ getUserName(version.uploadedBy) }}</span>
                                 </div>
-                                <button @click="downloadVersion(selectedDoc, version)" class="mt-2 text-[10px] font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg">
+                                <button @click="downloadVersion(selectedDoc, version)" class="mt-2 text-[10px] font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition">
                                     <i class="fas fa-download mr-1"></i> Скачать версию
                                 </button>
                             </div>
@@ -632,13 +616,10 @@
                 const showUserMenu = ref(false);
                 const uploading = ref(false);
                 const selectedProject = ref('all');
-                const selectedOrder = ref(null);
-                const showNewProjectModal = ref(false);
-                const sidebarOpen = ref(false);
-                const sidebarCollapsed = ref(false);
-                const isMobile = ref(window.innerWidth < 768);
                 const expandedProjects = ref([]);
                 const expandedOrders = ref([]);
+                const sidebarCollapsed = ref(false);
+                const isMobile = ref(window.innerWidth < 768);
                 const apiConnected = ref(true);
                 const loading = ref(false);
                 const error = ref(null);
@@ -678,7 +659,6 @@
                 
                 const currentUser = ref(employees.value[0]);
                 const uploadForm = ref({ projectId: 'park-2', orderId: 'order-1', responsibleId: 'anna', comment: '', fileName: '', fileType: '' });
-                const newProjectForm = ref({ name: '', color: '#3b82f6', icon: '🏢' });
                 const validationChecks = ref([]);
                 const searchQuery = ref('');
                 const filterResponsible = ref('all');
@@ -712,14 +692,10 @@
                 const formatDate = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '—';
                 const formatTime = (iso) => { if (!iso) return '—'; const d = new Date(iso); return d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'}) : d.toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit'}); };
                 
-                const statusBadge = (s) => "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase " + ({ valid: "bg-emerald-50 text-emerald-600 border border-emerald-200", invalid: "bg-rose-50 text-rose-600 border border-rose-200", processing: "bg-amber-50 text-amber-600 border border-amber-200" }[s] || '');
+                const statusBadge = (s) => "px-3 py-1 rounded-lg text-xs font-bold " + ({ valid: "bg-emerald-50 text-emerald-600 border border-emerald-200", invalid: "bg-rose-50 text-rose-600 border border-rose-200", processing: "bg-amber-50 text-amber-600 border border-amber-200" }[s] || '');
                 const statusBadgeMini = (s) => ({ valid: "bg-emerald-100 text-emerald-700", invalid: "bg-rose-100 text-rose-700", processing: "bg-amber-100 text-amber-700" }[s] || '');
                 const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка', processing: 'Анализ...' }[s]);
                 const statusTextMini = (s) => ({ valid: '✓', invalid: '✕', processing: '...' }[s]);
-                
-                const navClass = (tab) => "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition " + (currentTab.value === tab ? "bg-blue-600 text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-slate-800");
-                const logIconClass = (t) => ({ upload: 'bg-blue-50 text-blue-600', error: 'bg-rose-50 text-rose-600', view: 'bg-indigo-50 text-indigo-600' }[t]);
-                const logIcon = (t) => ({ upload: 'fas fa-arrow-up', error: 'fas fa-triangle-exclamation', view: 'fas fa-eye' }[t]);
 
                 // Computed
                 const currentTabName = computed(() => ({ registry: 'Реестр документации', upload: 'Загрузка файлов', audit: 'Аудит-лог' }[currentTab.value]));
@@ -728,16 +704,14 @@
                 const canUpload = computed(() => uploadForm.value.projectId && uploadForm.value.orderId && uploadForm.value.responsibleId && uploadForm.value.fileName);
                 
                 const sidebarClasses = computed(() => {
-                    const base = 'sidebar-transition z-40 h-full bg-slate-900 text-white shadow-xl sidebar-wrapper';
-                    if (isMobile.value) return `${base} fixed top-0 left-0 w-72 transform ${sidebarOpen.value ? 'translate-x-0' : '-translate-x-full'}`;
-                    if (sidebarCollapsed.value) return `${base} w-20 sidebar-collapsed`;
-                    return `${base} w-72`;
+                    if (isMobile.value) return `sidebar-wrapper fixed top-0 left-0 w-72 z-50 transform ${sidebarOpen.value ? 'translate-x-0' : '-translate-x-full'} transition-transform`;
+                    if (sidebarCollapsed.value) return 'sidebar-wrapper w-20 sidebar-collapsed';
+                    return 'sidebar-wrapper w-72';
                 });
                 
                 const filteredDocuments = computed(() => {
                     let r = [...documents.value];
                     if (selectedProject.value && selectedProject.value !== 'all') r = r.filter(d => d.projectId === selectedProject.value);
-                    if (selectedOrder.value) r = r.filter(d => d.orderId === selectedOrder.value);
                     if (filterResponsible.value !== 'all') r = r.filter(d => d.responsibleId === filterResponsible.value);
                     if (filterStatus.value !== 'all') r = r.filter(d => d.status === filterStatus.value);
                     if (filterType.value !== 'all') r = r.filter(d => d.fileType === filterType.value);
@@ -754,21 +728,12 @@
                 // Actions
                 const toggleSidebar = () => { if (isMobile.value) sidebarOpen.value = !sidebarOpen.value; };
                 const toggleSidebarCollapse = () => { if (!isMobile.value) sidebarCollapsed.value = !sidebarCollapsed.value; };
-                const navigateTo = (tab) => { currentTab.value = tab; if (tab === 'registry' && isMobile.value) sidebarOpen.value = false; };
-                const selectProject = (id) => { selectedProject.value = id; selectedOrder.value = null; if (currentTab.value !== 'registry') currentTab.value = 'registry'; if (isMobile.value) sidebarOpen.value = false; };
+                const navigateTo = (tab) => { currentTab.value = tab; if (isMobile.value) sidebarOpen.value = false; };
+                const selectProject = (id) => { selectedProject.value = id; };
                 const onProjectChange = () => { const o = getOrdersByProject(uploadForm.value.projectId); if (o.length) uploadForm.value.orderId = o[0].id; };
                 const toggleOrderExpand = (id) => { const i = expandedOrders.value.indexOf(id); i === -1 ? expandedOrders.value.push(id) : expandedOrders.value.splice(i, 1); };
                 const toggleUserMenu = () => { showUserMenu.value = !showUserMenu.value; };
-                const openNewProjectModal = () => { newProjectForm.value = { name: '', color: '#3b82f6', icon: '🏢' }; showNewProjectModal.value = true; };
-                
-                const createProject = () => {
-                    if (!newProjectForm.value.name) return;
-                    const id = 'proj-' + Date.now();
-                    projects.value.push({ id, name: newProjectForm.value.name, color: newProjectForm.value.color, icon: newProjectForm.value.icon });
-                    orders.value.push({ id: 'order-'+Date.now(), name: 'Новый заказ', projectId: id });
-                    showNewProjectModal.value = false;
-                    selectProject(id);
-                };
+                const openNewProjectModal = () => { alert('Создание проекта'); };
                 
                 const downloadFile = (doc) => {
                     const blob = new Blob([`<?xml version="1.0"?>\n<Document>${doc.number}</Document>`], { type: 'text/plain' });
@@ -837,7 +802,7 @@
                 const refreshData = () => { loading.value = true; error.value = null; setTimeout(() => loading.value = false, 1000); };
                 const openNewVersionModal = (doc) => { alert('Создание новой версии: ' + doc.number); };
 
-                const handleResize = () => { isMobile.value = window.innerWidth < 768; if (!isMobile.value) sidebarOpen.value = false; };
+                const handleResize = () => { isMobile.value = window.innerWidth < 768; if (!isMobile.value) sidebarCollapsed.value = false; };
                 const handleKeydown = (e) => { if (e.key === 'Escape' && selectedDoc.value) closeModal(); };
 
                 onMounted(() => { window.addEventListener('resize', handleResize); window.addEventListener('keydown', handleKeydown); });
@@ -845,16 +810,14 @@
 
                 return {
                     role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
-                    selectedProject, selectedOrder, sidebarOpen, sidebarCollapsed, isMobile,
-                    expandedProjects, expandedOrders, showNewProjectModal,
+                    selectedProject, expandedProjects, expandedOrders, sidebarCollapsed, isMobile,
                     apiConnected, loading, error,
                     projects, orders, employees, currentUser, documents, auditLogs,
-                    uploadForm, newProjectForm, projectColors, projectIcons, validationChecks,
-                    searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
+                    uploadForm, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
                     filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload,
                     fileInput, xmlEditorContent, sidebarClasses,
                     toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, onProjectChange, toggleOrderExpand,
-                    toggleUserMenu, openNewProjectModal, createProject,
+                    toggleUserMenu, openNewProjectModal,
                     downloadFile, downloadVersion, runValidationChecks, formatXML, saveXMLEdit,
                     triggerUpload, handleFile, resetUploadForm, submitUpload,
                     openModal, closeModal, resetFilters, refreshData, openNewVersionModal,
@@ -862,8 +825,7 @@
                     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
                     getProjectDocsCount,
                     getFileIcon, getFileIconColor, getFileIconClass, getFileTypeName,
-                    formatDate, formatTime, statusBadge, statusBadgeMini, statusText, statusTextMini, navClass,
-                    logIcon, logIconClass
+                    formatDate, formatTime, statusBadge, statusBadgeMini, statusText, statusTextMini
                 };
             }
         }).mount('#app');
