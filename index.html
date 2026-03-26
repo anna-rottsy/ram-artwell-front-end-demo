@@ -17,6 +17,50 @@
 .modal-enter-from .modal-card, .modal-leave-to .modal-card { transform: scale(0.95) translateY(10px); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* ===== LOGIN SCREEN ===== */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 3rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.login-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  color: white;
+  width: 100%;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.login-input:focus {
+  border-color: #3b82f6;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.login-input::placeholder {
+  color: #64748b;
+}
+
+/* ===== SIDEBAR ===== */
 .sidebar-wrapper {
   display: flex;
   flex-direction: column;
@@ -115,7 +159,49 @@
 </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
-<div id="app" v-cloak class="min-h-screen flex">
+<div id="app" v-cloak>
+
+<!-- ========== LOGIN SCREEN ========== -->
+<transition name="fade">
+<div v-if="!isLoggedIn" class="login-screen">
+  <div class="login-card">
+    <div class="text-center mb-8">
+      <div class="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-layer-group text-3xl text-white"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-white mb-2">ARTWELL <span class="text-blue-400">XML</span></h1>
+      <p class="text-slate-400 text-sm">Система верификации документов</p>
+    </div>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs text-slate-400 mb-2">Логин</label>
+        <input v-model="loginForm.login" type="text" class="login-input" placeholder="TEST" @keyup.enter="login">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-2">Пароль</label>
+        <input v-model="loginForm.pass" type="password" class="login-input" placeholder="123456" @keyup.enter="login">
+      </div>
+      <div>
+        <label class="block text-xs text-slate-400 mb-2">Роль</label>
+        <select v-model="loginForm.role" class="login-input">
+          <option value="contractor">👷 Подрядчик</option>
+          <option value="customer">🕵️ Заказчик</option>
+        </select>
+      </div>
+      <button @click="login" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">
+        Войти
+      </button>
+      <p class="text-center text-xs text-slate-500">
+        Тест: <code class="bg-slate-800 px-2 py-1 rounded">TEST / 123456</code>
+      </p>
+    </div>
+  </div>
+</div>
+</transition>
+
+<!-- ========== MAIN APP ========== -->
+<div v-if="isLoggedIn" class="min-h-screen flex">
 
 <!-- ========== SIDEBAR ========== -->
 <aside :class="sidebarClasses" class="bg-slate-900 text-white shadow-xl z-40 fixed md:relative sidebar-wrapper">
@@ -226,13 +312,6 @@
             <i class="fas fa-plus text-[8px]"></i>
           </button>
         </div>
-        
-        <!-- Add Order Button -->
-        <button v-if="role === 'contractor'" @click="openNewOrderModal(project)"
-          class="w-full flex items-center gap-2 px-3 py-1.5 rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-800/50 text-[11px] transition border border-dashed border-slate-700 mt-1 ml-2">
-          <i class="fas fa-folder-plus text-[10px]"></i>
-          <span>Добавить заказ</span>
-        </button>
         
         <!-- Documents (when order expanded) -->
         <div v-for="order in getOrdersByProject(project.id)" :key="'docs-'+order.id">
@@ -761,13 +840,33 @@
 </transition>
 
 </div>
+</div>
 
 <script>
 const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
 createApp({
 setup() {
-  // State
+  // ===== LOGIN STATE =====
+  const isLoggedIn = ref(false);
+  const loginForm = ref({ login: '', pass: '', role: 'contractor' });
+
+  // ===== LOGIN FUNCTION =====
+  const login = () => {
+    if (loginForm.value.login === "TEST" && loginForm.value.pass === "123456") {
+      isLoggedIn.value = true;
+      role.value = loginForm.value.role;
+    } else {
+      alert("Неверный логин или пароль");
+    }
+  };
+
+  const logout = () => {
+    isLoggedIn.value = false;
+    loginForm.value = { login: '', pass: '', role: 'contractor' };
+  };
+
+  // ===== APP STATE =====
   const role = ref('contractor');
   const currentTab = ref('registry');
   const modalTab = ref('preview');
@@ -789,7 +888,7 @@ setup() {
   const showEditProject = ref(false);
   const showQuickUpload = ref(false);
 
-  // Data
+  // ===== DATA =====
   const projects = ref([
     { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2', color: '#3b82f6', icon: '🏢', customerId: 'CUST-001', responsibleId: 'anna' },
     { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3', color: '#8b5cf6', icon: '🏗️', customerId: 'CUST-002', responsibleId: 'mikhail' },
@@ -839,7 +938,7 @@ setup() {
   const projectColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
   const projectIcons = ['🏢', '🏗️', '🏬', '🏭', '🛣️'];
 
-  // Helpers
+  // ===== HELPERS =====
   const getDocsCountForOrder = (orderId) => documents.value.filter(d => d.orderId === orderId).length;
   const getProjectName = (id) => projects.value.find(p => p.id === id)?.name || '—';
   const getProjectColor = (id) => projects.value.find(p => p.id === id)?.color || '#64748b';
@@ -865,7 +964,7 @@ setup() {
   const logIcon = (type) => ({ upload: 'fas fa-cloud-upload-alt text-blue-600', error: 'fas fa-triangle-exclamation text-rose-600', validation: 'fas fa-check-circle text-emerald-600' }[type] || 'fas fa-info-circle text-slate-600');
   const logIconClass = (type) => ({ upload: 'bg-blue-100', error: 'bg-rose-100', validation: 'bg-emerald-100' }[type] || 'bg-slate-100');
 
-  // Computed
+  // ===== COMPUTED =====
   const currentTabName = computed(() => ({ registry: 'Реестр документации', upload: 'Загрузка файлов', audit: 'Аудит-лог' }[currentTab.value]));
   const totalDocsCount = computed(() => documents.value.length);
   const hasActiveFilters = computed(() => filterResponsible.value !== 'all' || filterStatus.value !== 'all' || filterType.value !== 'all');
@@ -894,7 +993,7 @@ setup() {
     return r.sort((a, b) => new Date(b.time) - new Date(a.time));
   });
 
-  // Actions
+  // ===== ACTIONS =====
   const toggleSidebar = () => { if (isMobile.value) sidebarOpen.value = !sidebarOpen.value; };
   const toggleSidebarCollapse = () => { if (!isMobile.value) sidebarCollapsed.value = !sidebarCollapsed.value; };
   const navigateTo = (tab) => { currentTab.value = tab; if (isMobile.value) sidebarOpen.value = false; };
@@ -940,7 +1039,6 @@ setup() {
       name: newOrder.value.name,
       projectId: newOrder.value.projectId
     });
-    // Auto-expand project to show new order
     if (!expandedProjects.value.includes(newOrder.value.projectId)) {
       expandedProjects.value.push(newOrder.value.projectId);
     }
@@ -1084,7 +1182,6 @@ setup() {
   const resetFilters = () => { filterResponsible.value = 'all'; filterStatus.value = 'all'; filterType.value = 'all'; searchQuery.value = ''; };
   const refreshData = () => { loading.value = true; error.value = null; setTimeout(() => loading.value = false, 1000); };
   const openNewVersionModal = (doc) => { alert('Создание новой версии: ' + doc.number); };
-  const logout = () => { location.reload(); };
 
   const handleResize = () => { isMobile.value = window.innerWidth < 768; if (!isMobile.value) sidebarCollapsed.value = false; };
 
@@ -1109,6 +1206,7 @@ setup() {
   });
 
   return {
+    isLoggedIn, loginForm, login, logout,
     role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
     selectedProject, selectedOrder, expandedProjects, expandedOrders, sidebarCollapsed, isMobile, sidebarOpen,
     apiConnected, loading, error, showCreateProject, showNewOrder, showEditProject, showQuickUpload,
@@ -1121,7 +1219,7 @@ setup() {
     openQuickUpload, closeQuickUpload, triggerQuickUpload, handleQuickFile, submitQuickUpload,
     downloadFile, downloadVersion, runValidationChecks, formatXML, saveXMLEdit,
     triggerUpload, handleFile, resetUploadForm, submitUpload,
-    openModal, closeModal, resetFilters, refreshData, openNewVersionModal, logout,
+    openModal, closeModal, resetFilters, refreshData, openNewVersionModal,
     getProjectName, getProjectColor, getOrderName, getOrdersByProject, getDocumentsByOrder, getDocsCountForOrder,
     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
     getProjectDocsCount,
