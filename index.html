@@ -17,48 +17,12 @@
 .modal-enter-from .modal-card, .modal-leave-to .modal-card { transform: scale(0.95) translateY(10px); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
-
-/* ===== LOGIN SCREEN ===== */
-.login-screen {
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.login-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 3rem;
-  width: 100%;
-  max-width: 420px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-}
-.login-input {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 0.875rem 1rem;
-  color: white;
-  width: 100%;
-  outline: none;
-  transition: all 0.2s;
-}
-.login-input:focus { border-color: #3b82f6; background: rgba(255, 255, 255, 0.08); }
-.login-input::placeholder { color: #64748b; }
-
-/* ===== SIDEBAR ===== */
 .sidebar-wrapper {
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
   width: 320px;
-  transition: width 0.3s ease;
 }
 .sidebar-header { flex: 0 0 auto; }
 .sidebar-content {
@@ -66,7 +30,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  padding: 1rem;
+  padding: 0.75rem;
 }
 .sidebar-footer {
   flex: 0 0 auto;
@@ -93,11 +57,6 @@
 .sidebar-collapsed .user-details { display: none !important; }
 .sidebar-collapsed .project-badge { display: none !important; }
 .sidebar-collapsed .action-buttons { display: none !important; }
-.tree-item {
-  padding-left: 1.5rem;
-  border-left: 2px solid #334155;
-  margin-left: 0.5rem;
-}
 .tree-toggle { transition: transform 0.2s ease; }
 .tree-toggle.rotated { transform: rotate(90deg); }
 .code-editor {
@@ -112,52 +71,51 @@
   50% { opacity: 0.5; }
 }
 .validating { animation: validate-pulse 1.5s ease-in-out infinite; }
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.project-row:hover { background: rgba(255, 255, 255, 0.05); }
+.project-row.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-left: 3px solid #3b82f6;
+  padding-left: 0.5rem;
+}
+.order-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem 0.375rem 2.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8125rem;
+}
+.order-row:hover { background: rgba(255, 255, 255, 0.03); }
+.order-row.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: white;
+}
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem 0.25rem 4rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.75rem;
+}
+.doc-row:hover { background: rgba(255, 255, 255, 0.03); }
 </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
-<div id="app" v-cloak>
-
-<!-- ========== LOGIN SCREEN ========== -->
-<transition name="fade">
-<div v-if="!isLoggedIn" class="login-screen">
-  <div class="login-card">
-    <div class="text-center mb-8">
-      <div class="bg-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-        <i class="fas fa-layer-group text-3xl text-white"></i>
-      </div>
-      <h1 class="text-2xl font-bold text-white mb-2">ARTWELL <span class="text-blue-400">XML</span></h1>
-      <p class="text-slate-400 text-sm">Система верификации документов</p>
-    </div>
-
-    <div class="space-y-4">
-      <div>
-        <label class="block text-xs text-slate-400 mb-2">Логин</label>
-        <input v-model="loginForm.login" type="text" class="login-input" placeholder="TEST" @keyup.enter="login">
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-2">Пароль</label>
-        <input v-model="loginForm.pass" type="password" class="login-input" placeholder="123456" @keyup.enter="login">
-      </div>
-      <div>
-        <label class="block text-xs text-slate-400 mb-2">Роль</label>
-        <select v-model="loginForm.role" class="login-input">
-          <option value="contractor">👷 Подрядчик</option>
-          <option value="customer">🕵️ Заказчик</option>
-        </select>
-      </div>
-      <button @click="login" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition">
-        Войти
-      </button>
-      <p class="text-center text-xs text-slate-500">
-        Тест: <code class="bg-slate-800 px-2 py-1 rounded">TEST / 123456</code>
-      </p>
-    </div>
-  </div>
-</div>
-</transition>
-
-<!-- ========== MAIN APP ========== -->
-<div v-if="isLoggedIn" class="min-h-screen flex">
+<div id="app" v-cloak class="min-h-screen flex">
 
 <!-- ========== SIDEBAR ========== -->
 <aside :class="sidebarClasses" class="bg-slate-900 text-white shadow-xl z-40 fixed md:relative sidebar-wrapper">
@@ -188,7 +146,6 @@
       <i class="fas fa-list-ul text-lg shrink-0 w-6 text-center"></i>
       <span class="text-element nav-text font-medium">Реестр документов</span>
     </button>
-    <!-- Upload Tab ONLY for Contractor -->
     <button @click="navigateTo('upload')" v-if="role === 'contractor'"
       :class="currentTab === 'upload' ? 'nav-button-active' : 'nav-button-inactive'"
       class="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition text-left">
@@ -205,9 +162,8 @@
 
   <!-- PROJECTS -->
   <div class="sidebar-content">
-    <div class="flex items-center justify-between mb-3">
+    <div class="flex items-center justify-between mb-2 px-2">
       <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider text-element">Проекты</span>
-      <!-- Create Project Button ONLY for Contractor -->
       <button v-if="role === 'contractor'" @click="showCreateProject = true"
         class="w-6 h-6 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition text-element"
         title="Создать проект">
@@ -217,80 +173,70 @@
 
     <!-- All Projects -->
     <div @click="selectProject('all')"
-      :class="!selectedProject || selectedProject === 'all' ? 'bg-blue-600/20 text-white border-l-2 border-blue-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'"
-      class="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer mb-1 transition">
-      <i class="fas fa-th-large text-sm shrink-0 w-5"></i>
+      :class="selectedProject === 'all' ? 'active' : ''"
+      class="project-row text-slate-400">
+      <i class="fas fa-th-large text-sm w-5 text-center shrink-0"></i>
       <span class="text-element text-sm font-medium flex-1 truncate">Все проекты</span>
       <span class="text-element project-badge text-[10px] bg-slate-700 px-2 py-0.5 rounded-full shrink-0">{{ totalDocsCount }}</span>
     </div>
 
     <!-- Project List -->
-    <div v-for="project in projects" :key="project.id" class="mb-2">
-      <div class="group flex items-center gap-2">
-        <div @click="selectProject(project.id)"
-          :class="selectedProject === project.id ? 'bg-blue-600/20 text-white border-l-2 border-blue-400' : 'text-slate-400 hover:text-white hover:bg-slate-800'"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition flex-1">
-          <div class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold shrink-0"
-            :style="{ background: project.color + '20', color: project.color }">
-            {{ project.icon }}
-          </div>
-          <span class="text-element text-sm font-medium flex-1 truncate">{{ project.name }}</span>
-          <span class="text-element project-badge text-[10px] px-2 py-0.5 rounded-full shrink-0"
-            :style="{ backgroundColor: project.color + '30', color: project.color }">
-            {{ getProjectDocsCount(project.id) }}
-          </span>
+    <div v-for="project in projects" :key="project.id" class="mb-1">
+      <div class="project-row group" :class="selectedProject === project.id ? 'active' : ''">
+        <button @click.stop="toggleProjectExpand(project.id)"
+          class="w-5 h-5 flex items-center justify-center text-slate-500 hover:text-white transition shrink-0">
+          <i class="fas fa-chevron-right tree-toggle text-[10px]" :class="{'rotated': expandedProjects.includes(project.id)}"></i>
+        </button>
+        <div class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold shrink-0"
+          :style="{ background: project.color + '20', color: project.color }">
+          {{ project.icon }}
         </div>
-        <!-- Action Buttons (Contractor Only) -->
-        <div class="action-buttons flex gap-1 opacity-0 group-hover:opacity-100 transition text-element" v-if="role === 'contractor'">
-          <button @click="openNewOrderModal(project)" 
-            class="w-7 h-7 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-emerald-400 transition"
-            title="Добавить заказ">
-            <i class="fas fa-folder-plus text-[11px]"></i>
-          </button>
-          <button @click="openEditProjectModal(project)" 
-            class="w-7 h-7 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-400 transition"
+        <span @click="selectProject(project.id)" class="text-element text-sm font-medium flex-1 truncate cursor-pointer">{{ project.name }}</span>
+        <span class="text-element project-badge text-[10px] px-2 py-0.5 rounded-full shrink-0"
+          :style="{ backgroundColor: project.color + '30', color: project.color }">
+          {{ getProjectDocsCount(project.id) }}
+        </span>
+        <div class="action-buttons flex gap-1 opacity-0 group-hover:opacity-100 transition text-element shrink-0" v-if="role === 'contractor'">
+          <button @click.stop="openEditProjectModal(project)" 
+            class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-blue-400 transition"
             title="Редактировать">
             <i class="fas fa-pen text-[10px]"></i>
+          </button>
+          <button @click.stop="deleteProject(project.id)" 
+            class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-400 transition"
+            title="Удалить">
+            <i class="fas fa-trash text-[10px]"></i>
           </button>
         </div>
       </div>
 
-      <!-- Orders Tree -->
-      <div class="text-element" v-if="!sidebarCollapsed && (selectedProject === project.id || expandedProjects.includes(project.id))">
-        <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item mb-1">
-          <div class="group flex items-center gap-2">
-            <div @click="toggleOrderExpand(order.id)"
-              :class="selectedOrder === order.id ? 'text-white' : 'text-slate-300'"
-              class="flex items-center gap-2 px-3 py-1.5 rounded cursor-pointer hover:text-white hover:bg-slate-800 text-xs transition flex-1">
-              <i class="fas fa-chevron-right tree-toggle text-[10px] shrink-0" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
-              <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
-              <span class="truncate flex-1">{{ order.name }}</span>
-              <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
-            </div>
-            <!-- Add Doc Button (Contractor Only) -->
-            <button v-if="role === 'contractor'" @click="openQuickUpload(order.id)"
-              class="w-6 h-6 rounded hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-emerald-400 transition opacity-0 group-hover:opacity-100"
-              title="Добавить документ">
-              <i class="fas fa-plus text-[9px]"></i>
-            </button>
-          </div>
-          <!-- Documents under Order -->
-          <div v-if="expandedOrders.includes(order.id)" class="ml-4 space-y-1 mt-1">
-            <div v-for="doc in getDocumentsByOrder(order.id)" :key="doc.id"
-              @click="openModal(doc)"
-              class="flex items-center gap-2 px-3 py-1 rounded cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50 text-[11px] transition">
-              <i :class="getFileIcon(doc.fileType)" class="text-[10px] shrink-0" :style="{color: getFileIconColor(doc.fileType)}"></i>
-              <span class="truncate flex-1">{{ doc.number }}</span>
-              <span :class="statusBadgeMini(doc.status)" class="shrink-0 text-[9px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
-            </div>
+      <!-- Orders (when expanded) -->
+      <div v-if="expandedProjects.includes(project.id)" class="space-y-0.5">
+        <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="order-row group" :class="selectedOrder === order.id ? 'active' : ''">
+          <button @click.stop="toggleOrderExpand(order.id)"
+            class="w-4 h-4 flex items-center justify-center text-slate-600 hover:text-white transition shrink-0">
+            <i class="fas fa-chevron-right tree-toggle text-[8px]" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
+          </button>
+          <i class="fas fa-folder text-[10px] shrink-0" :style="{color: project.color}"></i>
+          <span @click="selectOrder(order.id)" class="flex-1 truncate cursor-pointer">{{ order.name }}</span>
+          <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded shrink-0">{{ getDocsCountForOrder(order.id) }}</span>
+          <button v-if="role === 'contractor'" @click.stop="openQuickUpload(order.id)"
+            class="w-5 h-5 rounded hover:bg-slate-700 flex items-center justify-center text-slate-600 hover:text-emerald-400 transition opacity-0 group-hover:opacity-100 shrink-0"
+            title="Добавить документ">
+            <i class="fas fa-plus text-[8px]"></i>
+          </button>
+        </div>
+        
+        <!-- Documents (when order expanded) -->
+        <div v-for="order in getOrdersByProject(project.id)" :key="'docs-'+order.id">
+          <div v-if="expandedOrders.includes(order.id)" v-for="doc in getDocumentsByOrder(order.id)" :key="doc.id"
+            @click="openModal(doc)"
+            class="doc-row text-slate-400 hover:text-white">
+            <i :class="getFileIcon(doc.fileType)" class="text-[10px] w-4 text-center shrink-0" :style="{color: getFileIconColor(doc.fileType)}"></i>
+            <span class="flex-1 truncate">{{ doc.number }}</span>
+            <span :class="statusBadgeMini(doc.status)" class="shrink-0 text-[8px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
           </div>
         </div>
-        <!-- Add Order Button (Contractor Only) -->
-        <button v-if="role === 'contractor'" @click="openNewOrderModal(project)"
-          class="w-full flex items-center gap-2 px-3 py-1.5 rounded text-slate-500 hover:text-emerald-400 hover:bg-slate-800/50 text-[11px] transition border border-dashed border-slate-700 mt-1">
-          <i class="fas fa-folder-plus text-[10px]"></i>
-          <span>Добавить заказ</span>
-        </button>
       </div>
     </div>
   </div>
@@ -449,7 +395,7 @@
       </div>
     </section>
 
-    <!-- UPLOAD TAB (Contractor Only) -->
+    <!-- UPLOAD TAB -->
     <section v-else-if="currentTab === 'upload' && role === 'contractor'" class="max-w-2xl mx-auto">
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
         <h3 class="text-lg font-bold text-slate-800 mb-4">Загрузка документа</h3>
@@ -580,35 +526,6 @@
 </div>
 </transition>
 
-<!-- ========== MODAL: CREATE ORDER ========== -->
-<transition name="modal">
-<div v-if="showNewOrder" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="showNewOrder = false">
-  <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
-  <div class="modal-card relative bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
-    <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
-      <h3 class="text-lg font-black text-slate-800">Создать заказ</h3>
-      <button @click="showNewOrder = false" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400">
-        <i class="fas fa-times text-lg"></i>
-      </button>
-    </div>
-    <div class="p-5 space-y-4">
-      <div>
-        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Проект</label>
-        <input type="text" :value="getProjectName(newOrder.projectId)" class="w-full bg-slate-100 border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-500" readonly>
-      </div>
-      <div>
-        <label class="block text-[10px] uppercase font-black text-slate-400 mb-2">Название заказа</label>
-        <input v-model="newOrder.name" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-blue-500" placeholder="Например: Заказ №2026-003">
-      </div>
-    </div>
-    <div class="p-4 bg-slate-50 border-t flex justify-end gap-3">
-      <button @click="showNewOrder = false" class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800">Отмена</button>
-      <button @click="createOrder" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-bold transition">Создать</button>
-    </div>
-  </div>
-</div>
-</transition>
-
 <!-- ========== MODAL: QUICK UPLOAD ========== -->
 <transition name="modal">
 <div v-if="showQuickUpload" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click.self="closeQuickUpload">
@@ -677,7 +594,6 @@
         <button @click="modalTab = 'preview'" :class="modalTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap transition">
           <i class="fas fa-eye mr-2"></i>Предпросмотр
         </button>
-        <!-- Editor Tab ONLY for Contractor -->
         <button v-if="selectedDoc.fileType === 'xml' && role === 'contractor'" @click="modalTab = 'editor'" :class="modalTab === 'editor' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500'" class="px-4 py-3 text-sm font-medium whitespace-nowrap transition">
           <i class="fas fa-code mr-2"></i>Редактор
         </button>
@@ -727,7 +643,6 @@
             <i class="fas fa-download text-blue-600"></i>
             <span class="text-xs font-bold text-blue-700">Скачать файл</span>
           </button>
-          <!-- New Version Button ONLY for Contractor -->
           <button v-if="role === 'contractor'" @click="openNewVersionModal(selectedDoc)" class="flex-1 p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition flex items-center justify-center gap-2">
             <i class="fas fa-plus text-emerald-600"></i>
             <span class="text-xs font-bold text-emerald-700">Новая версия</span>
@@ -735,7 +650,7 @@
         </div>
       </div>
 
-      <!-- EDITOR TAB (Contractor Only) -->
+      <!-- EDITOR TAB -->
       <div v-if="modalTab === 'editor' && selectedDoc.fileType === 'xml'" class="space-y-4">
         <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
@@ -810,19 +725,13 @@
 </transition>
 
 </div>
-</div>
 
 <script>
 const { createApp, ref, computed, onMounted, onUnmounted } = Vue;
 
 createApp({
 setup() {
-  // ===== LOGIN STATE =====
-  const isLoggedIn = ref(false);
-  const loginForm = ref({ login: '', pass: '', role: 'contractor' });
-  const userId = ref(null);
-
-  // ===== APP STATE =====
+  // State
   const role = ref('contractor');
   const currentTab = ref('registry');
   const modalTab = ref('preview');
@@ -841,10 +750,9 @@ setup() {
   const error = ref(null);
   const showCreateProject = ref(false);
   const showEditProject = ref(false);
-  const showNewOrder = ref(false);
   const showQuickUpload = ref(false);
 
-  // ===== DATA =====
+  // Data
   const projects = ref([
     { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2', color: '#3b82f6', icon: '🏢', customerId: 'CUST-001', responsibleId: 'anna' },
     { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3', color: '#8b5cf6', icon: '🏗️', customerId: 'CUST-002', responsibleId: 'mikhail' },
@@ -880,7 +788,6 @@ setup() {
   const currentUser = ref(employees.value[0]);
   const newProject = ref({ name: '', customerId: '', responsibleId: 'anna' });
   const editProject = ref({ id: '', name: '', customerId: '', responsibleId: '' });
-  const newOrder = ref({ projectId: '', name: '' });
   const uploadForm = ref({ projectId: 'park-2', orderId: 'order-1', responsibleId: 'anna', comment: '', fileName: '', fileType: '' });
   const quickUpload = ref({ orderId: '', number: '', fileName: '', fileType: '' });
   const validationChecks = ref([]);
@@ -892,28 +799,9 @@ setup() {
   const quickFileInput = ref(null);
   const xmlEditorContent = ref('');
   const projectColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
-  const projectIcons = ['🏢', '️', '🏬', '🏭', '️'];
+  const projectIcons = ['🏢', '🏗️', '🏬', '🏭', '🛣️'];
 
-  // ===== LOGIN FUNCTION =====
-  const login = () => {
-    if (loginForm.value.login === "TEST" && loginForm.value.pass === "123456") {
-      isLoggedIn.value = true;
-      userId.value = Math.floor(Math.random() * 1000);
-      role.value = loginForm.value.role;
-      // Reset to registry on login
-      currentTab.value = 'registry';
-    } else {
-      alert("Wrong credentials");
-    }
-  };
-
-  const logout = () => {
-    isLoggedIn.value = false;
-    loginForm.value = { login: '', pass: '', role: 'contractor' };
-    userId.value = null;
-  };
-
-  // ===== HELPERS =====
+  // Helpers
   const getDocsCountForOrder = (orderId) => documents.value.filter(d => d.orderId === orderId).length;
   const getProjectName = (id) => projects.value.find(p => p.id === id)?.name || '—';
   const getProjectColor = (id) => projects.value.find(p => p.id === id)?.color || '#64748b';
@@ -939,7 +827,7 @@ setup() {
   const logIcon = (type) => ({ upload: 'fas fa-cloud-upload-alt text-blue-600', error: 'fas fa-triangle-exclamation text-rose-600', validation: 'fas fa-check-circle text-emerald-600' }[type] || 'fas fa-info-circle text-slate-600');
   const logIconClass = (type) => ({ upload: 'bg-blue-100', error: 'bg-rose-100', validation: 'bg-emerald-100' }[type] || 'bg-slate-100');
 
-  // ===== COMPUTED =====
+  // Computed
   const currentTabName = computed(() => ({ registry: 'Реестр документации', upload: 'Загрузка файлов', audit: 'Аудит-лог' }[currentTab.value]));
   const totalDocsCount = computed(() => documents.value.length);
   const hasActiveFilters = computed(() => filterResponsible.value !== 'all' || filterStatus.value !== 'all' || filterType.value !== 'all');
@@ -968,12 +856,21 @@ setup() {
     return r.sort((a, b) => new Date(b.time) - new Date(a.time));
   });
 
-  // ===== ACTIONS =====
+  // Actions
   const toggleSidebar = () => { if (isMobile.value) sidebarOpen.value = !sidebarOpen.value; };
   const toggleSidebarCollapse = () => { if (!isMobile.value) sidebarCollapsed.value = !sidebarCollapsed.value; };
   const navigateTo = (tab) => { currentTab.value = tab; if (isMobile.value) sidebarOpen.value = false; };
   const selectProject = (id) => { selectedProject.value = id; selectedOrder.value = null; };
+  const selectOrder = (id) => { selectedOrder.value = id; };
   const onProjectChange = () => { const o = getOrdersByProject(uploadForm.value.projectId); if (o.length) uploadForm.value.orderId = o[0].id; };
+  const toggleProjectExpand = (id) => {
+    const idx = expandedProjects.value.indexOf(id);
+    if (idx === -1) {
+      expandedProjects.value.push(id);
+    } else {
+      expandedProjects.value.splice(idx, 1);
+    }
+  };
   const toggleOrderExpand = (id) => { const i = expandedOrders.value.indexOf(id); i === -1 ? expandedOrders.value.push(id) : expandedOrders.value.splice(i, 1); };
   const toggleUserMenu = () => { showUserMenu.value = !showUserMenu.value; };
 
@@ -993,6 +890,14 @@ setup() {
     showCreateProject.value = false;
   };
 
+  const deleteProject = (id) => {
+    if (confirm('Удалить проект?')) {
+      projects.value = projects.value.filter(p => p.id !== id);
+      if (selectedProject.value === id) selectedProject.value = 'all';
+      expandedProjects.value = expandedProjects.value.filter(pid => pid !== id);
+    }
+  };
+
   const openEditProjectModal = (project) => {
     editProject.value = { ...project };
     showEditProject.value = true;
@@ -1004,25 +909,6 @@ setup() {
       projects.value[idx] = { ...projects.value[idx], name: editProject.value.name, customerId: editProject.value.customerId, responsibleId: editProject.value.responsibleId };
     }
     showEditProject.value = false;
-  };
-
-  const openNewOrderModal = (project) => {
-    newOrder.value = { projectId: project.id, name: '' };
-    showNewOrder.value = true;
-  };
-
-  const createOrder = () => {
-    if (!newOrder.value.name) { alert('Введите название заказа'); return; }
-    orders.value.push({
-      id: 'order-' + Date.now(),
-      name: newOrder.value.name,
-      projectId: newOrder.value.projectId
-    });
-    if (!expandedProjects.value.includes(newOrder.value.projectId)) {
-      expandedProjects.value.push(newOrder.value.projectId);
-    }
-    newOrder.value = { projectId: '', name: '' };
-    showNewOrder.value = false;
   };
 
   const openQuickUpload = (orderId) => {
@@ -1148,6 +1034,7 @@ setup() {
   const resetFilters = () => { filterResponsible.value = 'all'; filterStatus.value = 'all'; filterType.value = 'all'; searchQuery.value = ''; };
   const refreshData = () => { loading.value = true; error.value = null; setTimeout(() => loading.value = false, 1000); };
   const openNewVersionModal = (doc) => { alert('Создание новой версии: ' + doc.number); };
+  const logout = () => { location.reload(); };
 
   const handleResize = () => { isMobile.value = window.innerWidth < 768; if (!isMobile.value) sidebarCollapsed.value = false; };
 
@@ -1156,7 +1043,6 @@ setup() {
       if (selectedDoc.value) closeModal();
       if (showCreateProject.value) showCreateProject.value = false;
       if (showEditProject.value) showEditProject.value = false;
-      if (showNewOrder.value) showNewOrder.value = false;
       if (showQuickUpload.value) closeQuickUpload();
     }
   };
@@ -1172,21 +1058,19 @@ setup() {
   });
 
   return {
-    isLoggedIn, loginForm, userId, role,
-    currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
+    role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
     selectedProject, selectedOrder, expandedProjects, expandedOrders, sidebarCollapsed, isMobile, sidebarOpen,
-    apiConnected, loading, error, showCreateProject, showEditProject, showNewOrder, showQuickUpload,
+    apiConnected, loading, error, showCreateProject, showEditProject, showQuickUpload,
     projects, orders, employees, currentUser, documents, auditLogs,
-    newProject, editProject, newOrder, uploadForm, quickUpload, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
+    newProject, editProject, uploadForm, quickUpload, validationChecks, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
     filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, canQuickUpload,
     fileInput, quickFileInput, xmlEditorContent, sidebarClasses,
-    login, logout,
-    toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, onProjectChange, toggleOrderExpand,
-    toggleUserMenu, createProject, openEditProjectModal, saveEditProject, openNewOrderModal, createOrder,
+    toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, selectOrder, onProjectChange, toggleProjectExpand, toggleOrderExpand,
+    toggleUserMenu, createProject, deleteProject, openEditProjectModal, saveEditProject,
     openQuickUpload, closeQuickUpload, triggerQuickUpload, handleQuickFile, submitQuickUpload,
     downloadFile, downloadVersion, runValidationChecks, formatXML, saveXMLEdit,
     triggerUpload, handleFile, resetUploadForm, submitUpload,
-    openModal, closeModal, resetFilters, refreshData, openNewVersionModal,
+    openModal, closeModal, resetFilters, refreshData, openNewVersionModal, logout,
     getProjectName, getProjectColor, getOrderName, getOrdersByProject, getDocumentsByOrder, getDocsCountForOrder,
     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
     getProjectDocsCount,
