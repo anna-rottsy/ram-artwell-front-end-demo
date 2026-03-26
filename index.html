@@ -2,130 +2,217 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Artwell MVP Fixed</title>
+    <title>Artwell Verify MVP | Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans">
+<body class="bg-[#0f172a] text-slate-200 font-sans antialiased overflow-hidden">
 
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="w-64 bg-slate-800 border-r border-slate-700 p-6 flex flex-col">
-            <div class="text-xl font-bold text-blue-400 mb-8 tracking-tighter">ARTWELL <span class="text-white">DOCS</span></div>
+        <aside class="w-72 bg-[#1e293b] border-r border-slate-700/50 p-6 flex flex-col shadow-2xl">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20"><i class="fas fa-microchip text-white"></i></div>
+                <div class="text-xl font-black text-white tracking-tighter uppercase">Artwell <span class="text-blue-500">Core</span></div>
+            </div>
+            
             <nav class="space-y-2 flex-1">
-                <button class="w-full text-left p-3 rounded bg-blue-600 font-bold">📂 Реестр</button>
-                <button class="w-full text-left p-3 rounded hover:bg-slate-700 text-slate-400">🕒 Аудит</button>
+                <button onclick="switchTab('registry')" id="btn-registry" class="w-full text-left p-3.5 rounded-xl bg-blue-600 font-bold text-white shadow-lg shadow-blue-500/10 transition-all">📂 Реестр XML</button>
+                <button onclick="switchTab('audit')" id="btn-audit" class="w-full text-left p-3.5 rounded-xl hover:bg-slate-700/50 text-slate-400 font-medium transition-all">🕒 Журнал аудита</button>
             </nav>
-            <div class="pt-4 border-t border-slate-700 text-xs text-slate-500">Пользователь: Анна (Verify)</div>
+
+            <div class="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+                <p class="text-[10px] font-black text-slate-500 uppercase mb-2">Роль в системе</p>
+                <select onchange="updateRole(this.value)" class="w-full bg-transparent font-bold text-sm outline-none text-blue-400 cursor-pointer">
+                    <option value="contractor">👷 Подрядчик</option>
+                    <option value="client">🕵️ Заказчик</option>
+                </select>
+            </div>
         </aside>
 
-        <!-- Main Content -->
-        <main class="flex-1 p-10 overflow-y-auto">
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-black">Реестр документов</h1>
-                <button onclick="alert('Функция загрузки в разработке')" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition shadow-lg shadow-blue-500/20">
-                    + Загрузить XML
+        <!-- Main -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <!-- TopBar: Stats -->
+            <header class="h-20 border-b border-slate-700/50 flex items-center justify-between px-10 bg-[#0f172a]/80 backdrop-blur-md">
+                <div class="flex gap-8">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase">Всего файлов</p>
+                        <p id="stat-total" class="text-xl font-black text-white">3</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black text-emerald-500 uppercase">Валидно</p>
+                        <p id="stat-valid" class="text-xl font-black text-emerald-400">2</p>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('fileInput').click()" class="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition transform active:scale-95 shadow-xl shadow-blue-500/20">
+                    <i class="fas fa-file-upload mr-2"></i> Загрузить XML
                 </button>
-            </div>
+            </header>
 
-            <!-- Таблица -->
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-950/50">
-                        <tr>
-                            <th class="p-4 text-xs font-black uppercase text-slate-500">Документ</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-500">Статус</th>
-                            <th class="p-4 text-xs font-black uppercase text-slate-500">Версия</th>
-                            <th class="p-4 text-right"></th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-700">
-                        <tr class="hover:bg-slate-700/50 transition">
-                            <td class="p-4 font-bold">АКТ-ОС-2026-01.xml</td>
-                            <td class="p-4 text-emerald-400 text-sm font-bold">● Валиден</td>
-                            <td class="p-4 text-slate-400">v1.0</td>
-                            <td class="p-4 text-right">
-                                <button onclick="openModal('АКТ-ОС-2026-01.xml', 'valid')" class="text-xs font-black bg-slate-700 px-4 py-2 rounded hover:bg-blue-600 transition">ОТКРЫТЬ</button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-slate-700/50 transition">
-                            <td class="p-4 font-bold">ЖУРНАЛ-БЕТОН-42.xml</td>
-                            <td class="p-4 text-rose-500 text-sm font-bold">● Ошибка XSD</td>
-                            <td class="p-4 text-slate-400">v2.1</td>
-                            <td class="p-4 text-right">
-                                <button onclick="openModal('ЖУРНАЛ-БЕТОН-42.xml', 'error')" class="text-xs font-black bg-slate-700 px-4 py-2 rounded hover:bg-blue-600 transition">ОТКРЫТЬ</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div id="content-area" class="flex-1 p-10 overflow-y-auto custom-scrollbar">
+                <!-- Контент реестра генерируется JS -->
+                <div id="registry-list" class="grid gap-4"></div>
             </div>
         </main>
     </div>
 
-    <!-- МОДАЛКА (Изначально скрыта через display: none) -->
-    <div id="myModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-        <div class="bg-slate-800 w-full max-w-lg rounded-3xl border border-slate-700 shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
-                <h3 id="modalTitle" class="text-xl font-black text-white">Название файла</h3>
-                <button onclick="closeModal()" class="text-slate-500 hover:text-white text-2xl transition">&times;</button>
-            </div>
-            <div class="p-8 space-y-6">
+    <!-- МОДАЛКА РЕДАКТИРОВАНИЯ И СТАТУСА -->
+    <div id="mainModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+        <div class="bg-[#1e293b] w-full max-w-xl rounded-[2rem] border border-slate-700 shadow-2xl overflow-hidden scale-in-center">
+            <div class="p-8 border-b border-slate-700 flex justify-between items-center bg-slate-800/30">
                 <div>
-                    <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Статус документа</p>
-                    <p id="modalStatus" class="font-bold text-lg">Статус...</p>
+                    <h3 class="text-xs font-black text-blue-500 uppercase tracking-[0.2em] mb-1">Детали документа</h3>
+                    <input id="editName" type="text" class="bg-transparent text-2xl font-black text-white outline-none border-b-2 border-transparent focus:border-blue-500 w-full transition-all">
                 </div>
-                <div id="errorBlock" style="display: none;" class="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl">
-                    <p class="text-[10px] font-black text-rose-500 uppercase mb-1">Критическая ошибка</p>
-                    <p class="text-xs text-rose-200 italic leading-relaxed">Строка 15: Тег &lt;Contractor&gt; не соответствует схеме Минстроя.</p>
-                </div>
-                <div class="bg-slate-900/50 p-5 rounded-2xl border border-slate-700">
-                    <p class="text-[10px] font-black text-slate-500 uppercase mb-3 tracking-widest">Версионность</p>
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="font-bold text-slate-300">v1.0 (Текущая)</span>
-                        <span class="text-blue-400 font-bold cursor-pointer hover:underline">Скачать XML</span>
+                <button onclick="closeModal()" class="w-12 h-12 flex items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-8 space-y-8">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase mb-2">Текущий статус</p>
+                        <div id="modalStatusBadge" class="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider"></div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-black text-slate-500 uppercase mb-2">Версия ПО</p>
+                        <p id="modalVersion" class="text-white font-black italic text-lg">v1.0</p>
                     </div>
                 </div>
-            </div>
-            <div class="p-6 bg-slate-900/50 border-t border-slate-700 flex justify-end">
-                <button onclick="closeModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-3 rounded-xl font-bold transition shadow-lg shadow-blue-600/20">ЗАКРЫТЬ</button>
+
+                <div id="modalErrorBlock" class="hidden p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+                    <div class="flex gap-3">
+                        <i class="fas fa-exclamation-circle text-rose-500 mt-1"></i>
+                        <div>
+                            <p class="text-[10px] font-black text-rose-500 uppercase mb-1">Ошибка схемы XSD</p>
+                            <p class="text-sm text-rose-200/80 leading-relaxed font-medium italic">Объект "Contractor" не найден в реестре доверенных лиц Минстроя.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="saveChanges()" class="bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl font-black text-sm transition shadow-lg shadow-emerald-600/10 uppercase">Принять правки</button>
+                    <button onclick="closeModal()" class="bg-slate-700 hover:bg-slate-600 text-white p-4 rounded-2xl font-black text-sm transition uppercase">Отмена</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // Чистый JavaScript для 100% надежности
-        function openModal(name, status) {
-            const modal = document.getElementById('myModal');
-            const title = document.getElementById('modalTitle');
-            const statusEl = document.getElementById('modalStatus');
-            const errorBlock = document.getElementById('errorBlock');
+    <input type="file" id="fileInput" class="hidden" accept=".xml" onchange="handleFileUpload(this)">
 
-            title.innerText = name;
+    <script>
+        // Имитация базы данных
+        let state = {
+            docs: [
+                { id: 1, name: 'АКТ-СК-12.xml', status: 'valid', version: 1, date: '25.03 14:00' },
+                { id: 2, name: 'ОТЧЕТ-БЕТОН.xml', status: 'error', version: 2, date: '24.03 09:15' }
+            ],
+            currentDocId: null
+        };
+
+        function render() {
+            const list = document.getElementById('registry-list');
+            list.innerHTML = state.docs.map(doc => `
+                <div class="bg-[#1e293b] p-5 rounded-2xl border border-slate-700/50 flex items-center justify-between hover:border-blue-500/50 transition-all group">
+                    <div class="flex items-center gap-5">
+                        <div class="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center text-slate-500 group-hover:text-blue-400 transition">
+                            <i class="fas fa-file-code text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="font-black text-white text-lg leading-none mb-1">${doc.name}</p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">${doc.date} • Версия v${doc.version}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <span class="text-[10px] font-black uppercase tracking-widest ${doc.status === 'valid' ? 'text-emerald-500' : 'text-rose-500'}">
+                            ● ${doc.status === 'valid' ? 'Валиден' : 'Ошибка XSD'}
+                        </span>
+                        <button onclick="openModal(${doc.id})" class="bg-slate-800 hover:bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase transition tracking-widest">Править</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Обновляем статистику
+            document.getElementById('stat-total').innerText = state.docs.length;
+            document.getElementById('stat-valid').innerText = state.docs.filter(d => d.status === 'valid').length;
+        }
+
+        function handleFileUpload(input) {
+            if (!input.files.length) return;
+            const file = input.files[0];
+            const name = file.name;
             
-            if (status === 'error') {
-                statusEl.innerText = 'Ошибка валидации XSD';
-                statusEl.className = 'font-bold text-lg text-rose-500';
-                errorBlock.style.display = 'block';
+            // Простейшая проверка: если в названии есть "error" - будет ошибка
+            const isError = name.toLowerCase().includes('error');
+            
+            const newDoc = {
+                id: Date.now(),
+                name: name,
+                status: isError ? 'error' : 'valid',
+                version: 1,
+                date: 'Сегодня ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+            };
+
+            state.docs.unshift(newDoc);
+            render();
+            alert('Файл ' + name + ' успешно загружен и прошел валидацию!');
+        }
+
+        function openModal(id) {
+            const doc = state.docs.find(d => d.id === id);
+            state.currentDocId = id;
+            
+            document.getElementById('editName').value = doc.name;
+            document.getElementById('modalVersion').innerText = 'v' + doc.version + '.0';
+            
+            const badge = document.getElementById('modalStatusBadge');
+            const errorBlock = document.getElementById('modalErrorBlock');
+
+            if (doc.status === 'valid') {
+                badge.innerText = 'Проверка пройдена';
+                badge.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
+                errorBlock.classList.add('hidden');
             } else {
-                statusEl.innerText = 'Документ проверен и валиден';
-                statusEl.className = 'font-bold text-lg text-emerald-400';
-                errorBlock.style.display = 'none';
+                badge.innerText = 'Требует исправлений';
+                badge.className = 'inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black uppercase bg-rose-500/10 text-rose-500 border border-rose-500/20';
+                errorBlock.classList.remove('hidden');
             }
 
-            modal.style.display = 'flex';
+            document.getElementById('mainModal').style.display = 'flex';
+        }
+
+        function saveChanges() {
+            const newName = document.getElementById('editName').value;
+            const doc = state.docs.find(d => d.id === state.currentDocId);
+            doc.name = newName;
+            doc.version += 1; // Увеличиваем версию при правке
+            
+            closeModal();
+            render();
         }
 
         function closeModal() {
-            document.getElementById('myModal').style.display = 'none';
+            document.getElementById('mainModal').style.display = 'none';
         }
 
-        // Закрытие по клику на темный фон
-        window.onclick = function(event) {
-            const modal = document.getElementById('myModal');
-            if (event.target == modal) {
-                closeModal();
-            }
+        function switchTab(tab) {
+            alert('Переход в раздел ' + tab);
         }
+
+        // Первая отрисовка
+        render();
     </script>
+
+    <style>
+        .scale-in-center { animation: scale-in-center 0.2s cubic-bezier(0.250, 0.460, 0.450, 0.940) both; }
+        @keyframes scale-in-center {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
 </body>
 </html>
