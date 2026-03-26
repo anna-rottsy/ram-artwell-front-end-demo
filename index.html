@@ -2,234 +2,261 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Artwell Enterprise | Document Control</title>
+    <title>Artwell Enterprise | Pro Document Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
     <style>
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); }
-        .input-field { bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-up { animation: slideUp 0.4s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .xml-editor { font-family: 'Courier New', monospace; background: #0f172a; color: #94a3b8; }
+        .tab-active { border-bottom: 3px solid #3b82f6; color: #f8fafc; }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-300 font-sans antialiased overflow-hidden">
+<body class="bg-[#020617] text-slate-300 font-sans overflow-hidden">
 
     <div class="flex h-screen">
         <!-- Sidebar -->
-        <aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col shadow-2xl">
-            <div class="flex items-center gap-4 mb-12">
+        <aside class="w-80 bg-[#0f172a] border-r border-slate-800 p-8 flex flex-col shadow-2xl z-20">
+            <div class="flex items-center gap-4 mb-10">
                 <div class="bg-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fas fa-file-signature text-white text-xl"></i>
+                    <i class="fas fa-project-diagram text-white text-xl"></i>
                 </div>
                 <div>
                     <h1 class="text-white font-black text-xl leading-none uppercase tracking-tighter">Artwell</h1>
-                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-1">Verify System v2.0</p>
+                    <p class="text-[9px] font-bold text-blue-500 uppercase tracking-[0.3em] mt-1">Verify System</p>
                 </div>
             </div>
             
-            <nav class="space-y-3 flex-1">
-                <button onclick="renderRegistry()" class="w-full flex items-center gap-4 p-4 rounded-2xl bg-blue-600/10 text-blue-400 font-bold border border-blue-500/20">
-                    <i class="fas fa-th-list"></i> Реестр документов
-                </button>
-                <button class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-800 text-slate-500 font-medium transition">
-                    <i class="fas fa-history"></i> Журнал аудита
-                </button>
-            </nav>
+            <div class="space-y-6 flex-1">
+                <div>
+                    <p class="text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">Проекты</p>
+                    <nav class="space-y-1">
+                        <button onclick="setProject('all')" class="w-full text-left p-3 rounded-xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between">
+                            <span>Все объекты</span>
+                            <span id="badge-all" class="bg-slate-800 px-2 py-0.5 rounded text-[10px]">0</span>
+                        </button>
+                        <button onclick="setProject('ЖК Артвелл')" class="w-full text-left p-3 rounded-xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between">
+                            <span>🏢 ЖК Артвелл</span>
+                            <span id="badge-jk" class="bg-slate-800 px-2 py-0.5 rounded text-[10px]">0</span>
+                        </button>
+                        <button onclick="setProject('Изыскания')" class="w-full text-left p-3 rounded-xl hover:bg-slate-800 transition text-sm font-bold flex items-center justify-between text-blue-400">
+                            <span>🔬 Изыскания</span>
+                            <span id="badge-iz" class="bg-slate-800 px-2 py-0.5 rounded text-[10px]">0</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
 
-            <div class="p-6 bg-slate-900/50 rounded-3xl border border-slate-800">
-                <p class="text-[10px] font-black text-slate-500 uppercase mb-3">Уровень доступа</p>
-                <div class="flex items-center gap-3 text-emerald-400 font-bold text-sm">
-                    <i class="fas fa-user-shield"></i> Администратор ПО
+            <div class="mt-auto p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs">АР</div>
+                    <div>
+                        <p class="text-xs font-bold text-white leading-none">Анна Verify</p>
+                        <p class="text-[9px] text-slate-500 uppercase mt-1 tracking-tighter">Frontend Lead</p>
+                    </div>
                 </div>
             </div>
         </aside>
 
         <!-- Main -->
         <main class="flex-1 flex flex-col">
-            <!-- Header -->
-            <header class="h-24 px-10 flex items-center justify-between border-b border-slate-800 bg-[#020617]/50 backdrop-blur-md">
-                <div>
-                    <h2 class="text-2xl font-black text-white">Мониторинг объектов</h2>
-                    <p class="text-xs text-slate-500 font-medium">ЖК «Артвелл Парк», Секция 4.2</p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="bg-slate-900 px-6 py-3 rounded-2xl border border-slate-800 text-center">
-                        <p class="text-[9px] font-black text-slate-500 uppercase">Ошибок XSD</p>
-                        <p id="error-count" class="text-rose-500 font-black">1</p>
+            <!-- Top Header -->
+            <header class="h-24 px-10 flex items-center justify-between border-b border-slate-800 bg-[#020617]/80 backdrop-blur-xl z-10">
+                <div class="flex items-center gap-8">
+                    <div>
+                        <p class="text-[9px] font-black text-slate-500 uppercase mb-1">Группировка</p>
+                        <h2 id="current-project-title" class="text-xl font-black text-white uppercase tracking-tight font-serif italic">Все объекты</h2>
                     </div>
-                    <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-white/5 flex items-center gap-3">
-                        <i class="fas fa-plus"></i> ЗАГРУЗИТЬ XML
-                    </button>
+                    <div class="h-10 w-px bg-slate-800"></div>
+                    <div class="flex gap-6">
+                        <div class="text-center">
+                            <p class="text-[9px] font-black text-slate-500 uppercase mb-0.5 italic">Валидно</p>
+                            <p id="stat-ok" class="text-emerald-400 font-black leading-none">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[9px] font-black text-slate-500 uppercase mb-0.5 italic">Ошибки</p>
+                            <p id="stat-err" class="text-rose-500 font-black leading-none">0</p>
+                        </div>
+                    </div>
                 </div>
+                
+                <button onclick="document.getElementById('fileInput').click()" class="bg-white hover:bg-blue-50 text-slate-950 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl shadow-white/5 flex items-center gap-3 group">
+                    <i class="fas fa-file-export group-hover:rotate-12 transition"></i> ПРИКРЕПИТЬ XML/XSD
+                </button>
             </header>
 
-            <!-- Registry Content -->
-            <div id="registry-container" class="flex-1 p-10 overflow-y-auto space-y-4">
-                <!-- Картчоки будут тут -->
+            <!-- Content Area -->
+            <div id="registry" class="flex-1 p-10 overflow-y-auto custom-scrollbar space-y-4">
+                <!-- Сюда JS рендерит список -->
             </div>
         </main>
     </div>
 
-    <!-- MODAL EDITOR -->
-    <div id="editorModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/90 backdrop-blur-xl">
-        <div class="bg-[#1e293b] w-full max-w-2xl rounded-[2.5rem] border border-slate-700 shadow-2xl overflow-hidden animate-up">
-            <div class="p-10 border-b border-slate-800 flex justify-between items-start bg-slate-900/40">
-                <div>
-                    <span id="modalBadge" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block"></span>
-                    <h3 class="text-3xl font-black text-white leading-none">Редактор документа</h3>
+    <!-- ADVANCED EDITOR MODAL -->
+    <div id="editorModal" style="display: none;" class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-lg">
+        <div class="bg-[#0f172a] w-full max-w-5xl h-[85vh] rounded-[2.5rem] border border-slate-700 shadow-2xl flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-8 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600/10 p-3 rounded-xl border border-blue-500/20"><i class="fas fa-edit text-blue-500"></i></div>
+                    <div>
+                        <h3 id="modalFileName" class="text-xl font-black text-white tracking-tight">document.xsd</h3>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Режим прямого редактирования XML/XSD</p>
+                    </div>
                 </div>
                 <button onclick="closeModal()" class="w-12 h-12 rounded-full bg-slate-800 text-slate-500 hover:text-white transition flex items-center justify-center">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
-            <div class="p-10 space-y-8">
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-500 uppercase ml-1">Номер документа</label>
-                        <input id="in-num" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-white font-bold focus:border-blue-500 transition-all outline-none">
+
+            <!-- Modal Body (Two Columns) -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Left Column: XML Editor -->
+                <div class="flex-1 flex flex-col border-r border-slate-800">
+                    <div class="p-4 bg-slate-900 flex justify-between items-center">
+                        <span class="text-[10px] font-black text-slate-500 uppercase italic">Исходный код файла</span>
+                        <span class="text-[9px] bg-slate-800 px-2 py-0.5 rounded text-slate-400 font-mono">UTF-8</span>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-500 uppercase ml-1">Дата выдачи</label>
-                        <input id="in-date" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-white font-bold focus:border-blue-500 outline-none">
-                    </div>
+                    <textarea id="xmlContent" class="flex-1 w-full xml-editor p-8 outline-none resize-none custom-scrollbar text-sm leading-relaxed" spellcheck="false"></textarea>
                 </div>
 
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-500 uppercase ml-1">Объект строительства</label>
-                    <input id="in-obj" type="text" class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 text-white font-bold focus:border-blue-500 outline-none">
-                </div>
-
-                <div id="xsd-error" class="hidden p-6 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex gap-4">
-                    <i class="fas fa-bug text-rose-500 text-xl mt-1"></i>
-                    <div>
-                        <p class="text-xs font-black text-rose-500 uppercase mb-1">Ошибка XSD валидации</p>
-                        <p class="text-sm text-rose-200/70 font-medium">Несоответствие схемы: Поле 'Contractor' содержит недопустимые символы или не заполнено.</p>
+                <!-- Right Column: Meta & Logs -->
+                <div class="w-96 bg-slate-900/30 p-8 flex flex-col space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-500 uppercase block mb-2">Название версии</label>
+                            <input id="in-name" type="text" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-500 uppercase block mb-2">Проект</label>
+                            <select id="in-proj" class="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm text-white font-bold outline-none focus:border-blue-500">
+                                <option value="ЖК Артвелл">ЖК Артвелл</option>
+                                <option value="Изыскания">Изыскания</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
 
-                <div class="flex gap-4 pt-4">
-                    <button onclick="commitNewVersion()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white p-5 rounded-2xl font-black text-sm uppercase tracking-widest transition shadow-lg shadow-blue-600/20">
-                        Сохранить новую версию
-                    </button>
-                    <button onclick="closeModal()" class="px-10 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black text-sm uppercase transition">
-                        Отмена
-                    </button>
+                    <div id="xsd-alert" class="p-5 bg-rose-500/10 border border-rose-500/20 rounded-2xl hidden">
+                        <p class="text-[10px] font-black text-rose-500 uppercase mb-2">XSD Analyzer</p>
+                        <p class="text-xs text-rose-200/70 italic leading-relaxed font-medium">Обнаружено несоответствие типов данных в секции &lt;schema&gt;. Исправьте код слева.</p>
+                    </div>
+
+                    <div class="mt-auto space-y-3">
+                        <button onclick="saveDocument()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl font-black text-xs uppercase tracking-widest transition shadow-lg shadow-emerald-600/10 flex items-center justify-center gap-2">
+                            <i class="fas fa-check-circle"></i> Сохранить v.<span id="next-v">1</span>
+                        </button>
+                        <button onclick="closeModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-white p-4 rounded-2xl font-black text-xs uppercase transition">Отмена</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <input type="file" id="fileInput" class="hidden" accept=".xml" onchange="handleFile(this)">
+    <input type="file" id="fileInput" class="hidden" onchange="processFile(this)">
 
     <script>
-        // Имитация БД
         let db = [
-            { id: 1, num: 'АКТ-001/МИН', date: '20.03.2026', obj: 'ЖК Артвелл, корп 1', status: 'valid', ver: 1 },
-            { id: 2, num: 'ERROR-DOC-99', date: '21.03.2026', obj: 'ЖК Артвелл, корп 2', status: 'error', ver: 1 }
+            { id: 1, name: 'MainSchema-01.xsd', project: 'ЖК Артвелл', status: 'valid', ver: 1, content: '<?xml version="1.0" encoding="UTF-8"?>\n<xs:schema xmlns:xs="http://www.w3.org">\n  <xs:element name="note" type="xs:string""")/>>\n</xs:schema>' },
+            { id: 2, name: 'GeologicalReport-Draft.xsd', project: 'Изыскания', status: 'error', ver: 2, content: '<!-- Ошибка в заголовке -->\n<xs:schema>\n  <xs:invalid_tag />\n</xs:schema>' }
         ];
 
+        let currentFilter = 'all';
         let activeId = null;
 
-        function renderRegistry() {
-            const container = document.getElementById('registry-container');
-            container.innerHTML = db.map(doc => `
-                <div class="bg-[#0f172a] p-6 rounded-[2rem] border border-slate-800 flex items-center justify-between hover:bg-slate-900/50 transition-all animate-up">
+        function render() {
+            const container = document.getElementById('registry');
+            const filtered = currentFilter === 'all' ? db : db.filter(d => d.project === currentFilter);
+            
+            container.innerHTML = filtered.map(doc => `
+                <div class="bg-[#0f172a] p-6 rounded-[2rem] border border-slate-800/50 flex items-center justify-between hover:border-blue-500/50 transition-all group">
                     <div class="flex items-center gap-6">
-                        <div class="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center border border-slate-700">
-                            <i class="fas fa-file-alt text-slate-500"></i>
+                        <div class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center border border-slate-700 group-hover:scale-105 transition">
+                            <i class="fas ${doc.name.includes('.xsd') ? 'fa-code' : 'fa-file-alt'} text-slate-500"></i>
                         </div>
                         <div>
                             <div class="flex items-center gap-3 mb-1">
-                                <h4 class="text-xl font-black text-white">${doc.num}</h4>
-                                <span class="px-2 py-0.5 bg-slate-800 rounded text-[10px] font-black text-slate-500 italic uppercase">v${doc.ver}</span>
+                                <h4 class="text-xl font-black text-white">${doc.name}</h4>
+                                <span class="text-[9px] bg-blue-600/10 text-blue-500 px-2 rounded-full font-black border border-blue-500/10 uppercase italic">v.${doc.ver}</span>
                             </div>
-                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">${doc.obj} • ${doc.date}</p>
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest italic">${doc.project} • Проверка XSD: 
+                                <span class="${doc.status === 'valid' ? 'text-emerald-500' : 'text-rose-500'} font-black">${doc.status.toUpperCase()}</span>
+                            </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-8">
-                        <div class="text-right">
-                            <p class="text-[9px] font-black text-slate-600 uppercase mb-1">Статус</p>
-                            <span class="text-xs font-black uppercase tracking-widest ${doc.status === 'valid' ? 'text-emerald-500' : 'text-rose-500'}">
-                                ${doc.status === 'valid' ? '✓ Проверен' : '⚠ Ошибка XSD'}
-                            </span>
-                        </div>
-                        <button onclick="openEditor(${doc.id})" class="bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white px-8 py-3 rounded-xl text-xs font-black uppercase transition-all border border-blue-500/20">
-                            Редактировать
-                        </button>
-                    </div>
+                    <button onclick="openEditor(${doc.id})" class="bg-slate-900 hover:bg-blue-600 text-slate-400 hover:text-white px-8 py-3 rounded-xl text-xs font-black uppercase transition-all shadow-inner border border-slate-800">ПРАВИТЬ XML</button>
                 </div>
             `).join('');
 
-            document.getElementById('error-count').innerText = db.filter(d => d.status === 'error').length;
+            // Статистика
+            document.getElementById('badge-all').innerText = db.length;
+            document.getElementById('badge-jk').innerText = db.filter(d => d.project === 'ЖК Артвелл').length;
+            document.getElementById('badge-iz').innerText = db.filter(d => d.project === 'Изыскания').length;
+            document.getElementById('stat-ok').innerText = db.filter(d => d.status === 'valid').length;
+            document.getElementById('stat-err').innerText = db.filter(d => d.status === 'error').length;
         }
 
-        function handleFile(input) {
+        function setProject(p) {
+            currentFilter = p;
+            document.getElementById('current-project-title').innerText = p === 'all' ? 'Все объекты' : p;
+            render();
+        }
+
+        function processFile(input) {
             if (!input.files.length) return;
             const file = input.files[0];
-            const isErr = file.name.toLowerCase().includes('error');
+            const reader = new FileReader();
             
-            const newDoc = {
-                id: Date.now(),
-                num: file.name.replace('.xml', '').toUpperCase(),
-                date: new Date().toLocaleDateString(),
-                obj: 'ЖК Артвелл Парк (Новый объект)',
-                status: isErr ? 'error' : 'valid',
-                ver: 1
+            reader.onload = function(e) {
+                const newDoc = {
+                    id: Date.now(),
+                    name: file.name,
+                    project: file.name.toLowerCase().includes('report') ? 'Изыскания' : 'ЖК Артвелл',
+                    status: file.name.toLowerCase().includes('error') ? 'error' : 'valid',
+                    ver: 1,
+                    content: e.target.result
+                };
+                db.unshift(newDoc);
+                render();
+                alert('Файл ' + file.name + ' загружен и добавлен в проект ' + newDoc.project);
             };
-            db.unshift(newDoc);
-            renderRegistry();
-            alert('Файл загружен. Результат валидации: ' + (isErr ? 'ОШИБКА' : 'УСПЕХ'));
+            reader.readAsText(file);
         }
 
         function openEditor(id) {
             activeId = id;
             const doc = db.find(d => d.id === id);
             
-            document.getElementById('in-num').value = doc.num;
-            document.getElementById('in-date').value = doc.date;
-            document.getElementById('in-obj').value = doc.obj;
+            document.getElementById('modalFileName').innerText = doc.name;
+            document.getElementById('xmlContent').value = doc.content;
+            document.getElementById('in-name').value = doc.name;
+            document.getElementById('in-proj').value = doc.project;
+            document.getElementById('next-v').innerText = doc.ver + 1;
             
-            const badge = document.getElementById('modalBadge');
-            const errBlock = document.getElementById('xsd-error');
-            
-            if (doc.status === 'valid') {
-                badge.innerText = 'Документ валиден';
-                badge.className = 'px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block bg-emerald-500/10 text-emerald-500 border border-emerald-500/20';
-                errBlock.classList.add('hidden');
-            } else {
-                badge.innerText = 'Требуется исправление';
-                badge.className = 'px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-4 inline-block bg-rose-500/10 text-rose-500 border border-rose-500/20';
-                errBlock.classList.remove('hidden');
-            }
+            const alert = document.getElementById('xsd-alert');
+            doc.status === 'error' ? alert.classList.remove('hidden') : alert.classList.add('hidden');
 
             document.getElementById('editorModal').style.display = 'flex';
         }
 
-        function commitNewVersion() {
+        function saveDocument() {
             const doc = db.find(d => d.id === activeId);
-            const newNum = document.getElementById('in-num').value;
+            const newContent = document.getElementById('xmlContent').value;
             
-            doc.num = newNum;
-            doc.date = document.getElementById('in-date').value;
-            doc.obj = document.getElementById('in-obj').value;
-            doc.ver += 1; // Новая версия
-
-            // Если при редактировании мы убрали слово ERROR из номера, считаем документ исправленным
-            if (!newNum.toLowerCase().includes('error')) {
-                doc.status = 'valid';
-            }
+            doc.name = document.getElementById('in-name').value;
+            doc.project = document.getElementById('in-proj').value;
+            doc.content = newContent;
+            doc.ver += 1;
+            
+            // "Умная" валидация: если стерли слово "invalid" или "error" из XML, считаем исправленным
+            doc.status = (newContent.includes('invalid') || doc.name.includes('error')) ? 'error' : 'valid';
 
             closeModal();
-            renderRegistry();
+            render();
         }
 
-        function closeModal() {
-            document.getElementById('editorModal').style.display = 'none';
-        }
+        function closeModal() { document.getElementById('editorModal').style.display = 'none'; }
 
-        // Запуск
-        renderRegistry();
+        render();
     </script>
 </body>
 </html>
