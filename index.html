@@ -9,6 +9,19 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'artwell-blue': '#3b82f6',
+                        'artwell-dark': '#0f172a',
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
         [v-cloak] { display: none; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -23,142 +36,224 @@
         .fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
         
-        .project-item { transition: all 0.15s ease; }
-        .project-item:hover { transform: translateX(2px); }
-        .project-item.active { border-left: 3px solid #3b82f6; padding-left: 13px; margin-left: -3px; }
+        .sidebar-transition { transition: transform 0.3s ease, width 0.3s ease; }
+        
+        /* Tree view styles */
+        .tree-item { padding-left: 1.25rem; border-left: 2px solid #e2e8f0; margin-left: 0.5rem; }
+        .tree-item:last-child { border-left-color: transparent; }
+        .tree-toggle { transition: transform 0.2s ease; }
+        .tree-toggle.rotated { transform: rotate(90deg); }
+        
+        /* Code editor */
+        .code-editor { 
+            font-family: 'Fira Code', 'Consolas', monospace; 
+            font-size: 0.75rem; 
+            line-height: 1.5;
+            white-space: pre;
+            tab-size: 2;
+        }
+        
+        /* Non-interactive elements */
+        .no-hover:hover { background: transparent !important; cursor: default !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased">
     <div id="app" v-cloak class="min-h-screen flex">
         
         <!-- SIDEBAR -->
-        <aside class="w-72 bg-slate-900 text-white flex flex-col shadow-xl z-30 hidden md:flex">
-            <!-- Header -->
-            <div class="p-5 border-b border-slate-800">
-                <div class="flex items-center gap-3 mb-1">
-                    <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
-                        <i class="fas fa-layer-group text-xl text-white"></i>
-                    </div>
-                    <span class="font-bold text-lg tracking-tight">ARTWELL <span class="text-blue-400">XML</span></span>
-                </div>
-                <p class="text-[10px] text-slate-400 ml-11">Система верификации</p>
-            </div>
+        <aside :class="sidebarClasses" class="bg-slate-900 text-white flex flex-col shadow-xl z-40 fixed md:relative h-full sidebar-transition">
             
-            <!-- Main Navigation -->
-            <nav class="p-4 space-y-1">
-                <button @click="currentTab = 'registry'; selectProject('all')" 
-                        :class="navClass('registry', !selectedProject || selectedProject === 'all')">
-                    <i class="fas fa-list-ul w-5"></i> Реестр документов
-                </button>
-                <button @click="currentTab = 'upload'" v-if="role === 'contractor'" 
-                        :class="navClass('upload', selectedProject !== 'all')">
-                    <i class="fas fa-cloud-upload-alt w-5"></i> Загрузка файлов
-                </button>
-                <button @click="currentTab = 'audit'" :class="navClass('audit')">
-                    <i class="fas fa-history w-5"></i> Аудит-лог
-                </button>
-            </nav>
-
-            <!-- Projects Section -->
-            <div class="px-4 mt-2 flex-1 overflow-y-auto">
-                <div class="flex items-center justify-between mb-3 px-1">
-                    <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Проекты</span>
-                    <div class="flex items-center gap-2">
-                        <button v-if="selectedProject && selectedProject !== 'all'"
-                                @click="selectProject('all')"
-                                class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition">
-                            Сброс
-                        </button>
-                        <button v-if="role === 'contractor'" 
-                                @click="openNewProjectModal"
-                                class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition"
-                                title="Создать проект">
-                            <i class="fas fa-plus text-[10px]"></i>
+            <!-- Mobile Overlay -->
+            <div v-if="sidebarOpen && isMobile" @click="toggleSidebar" 
+                 class="fixed inset-0 bg-black/50 z-30 md:hidden"></div>
+            
+            <!-- Sidebar Content -->
+            <div class="flex-1 flex flex-col min-w-[288px] max-w-[288px]">
+                <!-- Header -->
+                <div class="p-5 border-b border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-500/20">
+                                <i class="fas fa-layer-group text-xl text-white"></i>
+                            </div>
+                            <span class="font-bold text-lg tracking-tight" v-if="!sidebarCollapsed">ARTWELL <span class="text-blue-400">XML</span></span>
+                        </div>
+                        <!-- Desktop Collapse Button -->
+                        <button @click="toggleSidebarCollapse" class="hidden md:flex w-8 h-8 items-center justify-center rounded hover:bg-slate-800 transition text-slate-400" title="Свернуть меню">
+                            <i :class="sidebarCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left'" class="text-xs"></i>
                         </button>
                     </div>
+                    <p class="text-[10px] text-slate-400 ml-11 mt-1" v-if="!sidebarCollapsed">Система верификации</p>
                 </div>
                 
-                <!-- All Projects Option -->
-                <div @click="selectProject('all')" 
-                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
-                     :class="!selectedProject || selectedProject === 'all' 
-                        ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'">
-                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
-                        <i class="fas fa-th-large"></i>
-                    </div>
-                    <span class="text-sm font-medium flex-1 truncate">Все проекты</span>
-                    <span class="text-[10px] bg-slate-700 px-2 py-0.5 rounded-full">{{ totalDocsCount }}</span>
-                </div>
-                
-                <!-- Project List -->
-                <div v-for="project in projects" :key="project.id"
-                     @click="selectProject(project.id)"
-                     class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1 relative group"
-                     :class="selectedProject === project.id 
-                        ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'">
-                    
-                    <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
-                         :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
-                        <span :style="{ color: project.color }">{{ project.icon }}</span>
-                    </div>
-                    
-                    <span class="text-sm font-medium flex-1 truncate">{{ project.name }}</span>
-                    
-                    <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
-                          :style="getProjectBadgeStyle(project.id)">
-                        {{ getProjectDocsCount(project.id) }}
-                    </span>
-                </div>
-            </div>
+                <!-- Main Navigation -->
+                <nav class="p-4 space-y-1" v-if="!sidebarCollapsed">
+                    <button @click="navigateTo('registry')" :class="navClass('registry')">
+                        <i class="fas fa-list-ul w-5"></i> <span class="ml-3">Реестр документов</span>
+                    </button>
+                    <button @click="navigateTo('upload')" v-if="role === 'contractor'" :class="navClass('upload')">
+                        <i class="fas fa-cloud-upload-alt w-5"></i> <span class="ml-3">Загрузка файлов</span>
+                    </button>
+                    <button @click="navigateTo('audit')" :class="navClass('audit')">
+                        <i class="fas fa-history w-5"></i> <span class="ml-3">Аудит-лог</span>
+                    </button>
+                </nav>
 
-            <!-- Bottom Section: User & Role -->
-            <div class="p-4 border-t border-slate-800 bg-slate-950/30">
-                <div class="flex items-center gap-3 mb-4 pb-4 border-b border-slate-800">
-                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10" 
-                         :style="{ backgroundColor: currentUser.color }">
-                        {{ getInitials(currentUser) }}
+                <!-- Projects Section -->
+                <div class="px-4 mt-2 flex-1 overflow-y-auto" v-if="!sidebarCollapsed">
+                    <div class="flex items-center justify-between mb-3 px-1">
+                        <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Проекты</span>
+                        <div class="flex items-center gap-2">
+                            <button v-if="selectedProject && selectedProject !== 'all'"
+                                    @click="selectProject('all')"
+                                    class="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition">
+                                Сброс
+                            </button>
+                            <button v-if="role === 'contractor'" 
+                                    @click="openNewProjectModal"
+                                    class="w-5 h-5 rounded bg-slate-800 hover:bg-blue-600 flex items-center justify-center text-slate-400 hover:text-white transition"
+                                    title="Создать проект">
+                                <i class="fas fa-plus text-[10px]"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-bold text-white truncate">{{ currentUser.name }}</p>
-                        <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
+                    
+                    <!-- All Projects -->
+                    <div @click="selectProject('all')" 
+                         class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                         :class="!selectedProject || selectedProject === 'all' 
+                            ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'">
+                        <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+                            <i class="fas fa-th-large"></i>
+                        </div>
+                        <span class="text-sm font-medium flex-1 truncate">Все проекты</span>
+                        <span class="text-[10px] bg-slate-700 px-2 py-0.5 rounded-full">{{ totalDocsCount }}</span>
+                    </div>
+                    
+                    <!-- Project List with Hierarchy -->
+                    <div v-for="project in projects" :key="project.id" class="mb-2">
+                        <div @click="selectProject(project.id)"
+                             class="project-item flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer mb-1"
+                             :class="selectedProject === project.id 
+                                ? 'bg-blue-600/20 text-white border-l-2 border-blue-400 pl-2.5' 
+                                : 'text-slate-400 hover:text-white hover:bg-slate-800'">
+                            
+                            <div class="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ring-1 ring-white/10"
+                                 :style="{ background: `linear-gradient(135deg, ${project.color}20, ${project.color}40)` }">
+                                <span :style="{ color: project.color }">{{ project.icon }}</span>
+                            </div>
+                            
+                            <span class="text-sm font-medium flex-1 truncate">{{ project.name }}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0"
+                                  :style="getProjectBadgeStyle(project.id)">
+                                {{ getProjectDocsCount(project.id) }}
+                            </span>
+                        </div>
+                        
+                        <!-- Orders Tree (nested) -->
+                        <div v-if="selectedProject === project.id || expandedProjects.includes(project.id)" 
+                             class="ml-4 space-y-1">
+                            <div v-for="order in getOrdersByProject(project.id)" :key="order.id" class="tree-item">
+                                <div @click="toggleOrderExpand(order.id)" 
+                                     class="flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-slate-300 hover:text-white hover:bg-slate-800 text-xs">
+                                    <i class="fas fa-chevron-right tree-toggle text-[10px]" :class="{'rotated': expandedOrders.includes(order.id)}"></i>
+                                    <i class="fas fa-folder text-[10px]" :style="{color: project.color}"></i>
+                                    <span class="truncate">{{ order.name }}</span>
+                                    <span class="text-[10px] bg-slate-700/50 px-1.5 py-0.5 rounded ml-auto">{{ order.docsCount }}</span>
+                                </div>
+                                
+                                <!-- Documents under Order -->
+                                <div v-if="expandedOrders.includes(order.id)" class="ml-4 space-y-1 mt-1">
+                                    <div v-for="doc in getDocumentsByOrder(order.id)" :key="doc.id"
+                                         @click="openModal(doc)"
+                                         class="flex items-center gap-2 px-2 py-1 rounded cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800/50 text-[11px] no-hover">
+                                        <i :class="getFileIcon(doc.fileType)" class="text-[10px]" :style="{color: getFileIconColor(doc.fileType)}"></i>
+                                        <span class="truncate">{{ doc.number }}</span>
+                                        <span :class="statusBadgeMini(doc.status)" class="ml-auto text-[9px] px-1.5 py-0.5 rounded">{{ statusTextMini(doc.status) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
-                <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    <option value="contractor">👷 Подрядчик</option>
-                    <option value="client">🕵️ Заказчик</option>
-                </select>
+
+                <!-- Bottom: User & Settings -->
+                <div class="p-4 border-t border-slate-800 bg-slate-950/30" v-if="!sidebarCollapsed">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="relative">
+                            <button @click="toggleUserMenu" 
+                                    class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold ring-2 ring-white/10 hover:ring-blue-400 transition" 
+                                    :style="{ backgroundColor: currentUser.color }">
+                                {{ getInitials(currentUser) }}
+                            </button>
+                            <!-- User Dropdown -->
+                            <transition name="fade">
+                                <div v-if="showUserMenu" class="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                                    <div class="px-4 py-2 border-b border-slate-100">
+                                        <p class="text-xs font-bold text-slate-800">{{ currentUser.name }}</p>
+                                        <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
+                                    </div>
+                                    <button v-for="emp in employees" :key="emp.id"
+                                            @click="currentUser = emp; showUserMenu = false" 
+                                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition flex items-center gap-2">
+                                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold" 
+                                              :style="{ backgroundColor: emp.color }">
+                                            {{ getInitials(emp) }}
+                                        </span>
+                                        {{ emp.name }}
+                                    </button>
+                                </div>
+                            </transition>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-white truncate">{{ currentUser.name }}</p>
+                            <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
+                        </div>
+                    </div>
+                    
+                    <label class="text-[10px] uppercase font-bold text-slate-500 mb-2 block">Режим работы</label>
+                    <select v-model="role" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        <option value="contractor">👷 Подрядчик</option>
+                        <option value="client">🕵️ Заказчик</option>
+                    </select>
+                </div>
             </div>
         </aside>
 
         <!-- MAIN AREA -->
         <main class="flex-1 flex flex-col h-screen overflow-hidden w-full">
             <!-- Top Nav -->
-            <header class="h-14 bg-white border-b flex items-center justify-between px-5 shadow-sm shrink-0">
+            <header class="h-14 bg-white border-b flex items-center justify-between px-4 shadow-sm shrink-0">
                 <div class="flex items-center gap-3">
-                    <button class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition">
+                    <!-- Mobile Menu Toggle -->
+                    <button @click="toggleSidebar" class="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 transition">
                         <i class="fas fa-bars text-slate-600"></i>
                     </button>
                     
                     <h2 class="text-base font-bold text-slate-800 uppercase tracking-wide">{{ currentTabName }}</h2>
                     
-                    <span v-if="selectedProject && selectedProject !== 'all'" 
-                          class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                        <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getProjectColor(selectedProject) }"></span>
-                        {{ getProjectName(selectedProject) }}
-                    </span>
+                    <!-- Active Project/Order Indicator -->
+                    <template v-if="selectedProject && selectedProject !== 'all'">
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                            <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: getProjectColor(selectedProject) }"></span>
+                            {{ getProjectName(selectedProject) }}
+                        </span>
+                        <span v-if="selectedOrder" class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded">
+                            <i class="fas fa-folder text-[10px]"></i> {{ getOrderName(selectedOrder) }}
+                        </span>
+                    </template>
                 </div>
                 
                 <div class="flex items-center gap-3">
+                    <!-- Search -->
                     <div v-if="currentTab === 'registry'" class="relative">
                         <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
                         <input type="text" v-model="searchQuery" placeholder="Поиск..." 
-                               class="w-40 sm:w-56 pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
+                               class="w-36 sm:w-48 pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition">
                     </div>
                     
+                    <!-- Mobile User Avatar -->
                     <button @click="toggleUserMenu" class="sm:hidden w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md ring-2 ring-white" 
                             :style="{ backgroundColor: currentUser.color }">
                         {{ getInitials(currentUser) }}
@@ -166,30 +261,12 @@
                 </div>
             </header>
 
-            <!-- Mobile User Menu -->
-            <transition name="fade">
-                <div v-if="showUserMenu" class="sm:hidden absolute right-4 top-14 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 w-48">
-                    <div class="px-4 py-2 border-b border-slate-100">
-                        <p class="text-xs font-bold text-slate-800">{{ currentUser.name }}</p>
-                        <p class="text-[10px] text-slate-400">{{ currentUser.role }}</p>
-                    </div>
-                    <button v-for="emp in employees" :key="emp.id"
-                            @click="currentUser = emp; showUserMenu = false" 
-                            class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 transition flex items-center gap-2">
-                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold" 
-                              :style="{ backgroundColor: emp.color }">
-                            {{ getInitials(emp) }}
-                        </span>
-                        {{ emp.name }}
-                    </button>
-                </div>
-            </transition>
-
             <!-- Scrollable Content -->
-            <div class="flex-1 overflow-y-auto p-5">
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5">
                 
                 <!-- TAB: REGISTRY -->
                 <section v-if="currentTab === 'registry'" class="animate-fade-in">
+                    <!-- Filters -->
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 flex flex-wrap gap-2 items-center">
                         <select v-model="filterResponsible" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
                             <option value="all">👤 Все ответственные</option>
@@ -215,11 +292,13 @@
                         </button>
                     </div>
 
+                    <!-- Documents Table -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-slate-50 border-b border-slate-200">
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Файл / Тип</th>
+                                    <th class="p-4 text-[11px] uppercase text-slate-500 font-black hidden sm:table-cell">Заказ / Проект</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black hidden sm:table-cell">Ответственный</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black text-center">Версия</th>
                                     <th class="p-4 text-[11px] uppercase text-slate-500 font-black">Статус</th>
@@ -240,6 +319,12 @@
                                                 <div class="font-bold text-slate-800 group-hover:text-blue-600 transition">{{ doc.number }}</div>
                                                 <div class="text-[10px] text-slate-400 font-medium uppercase">{{ getFileTypeName(doc.fileType) }} • {{ formatDate(doc.updatedAt) }}</div>
                                             </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 hidden sm:table-cell">
+                                        <div class="text-xs">
+                                            <span class="font-medium text-slate-700">{{ getOrderName(doc.orderId) }}</span>
+                                            <div class="text-[10px] text-slate-400">{{ getProjectName(doc.projectId) }}</div>
                                         </div>
                                     </td>
                                     <td class="p-4 hidden sm:table-cell">
@@ -265,12 +350,12 @@
                                     </td>
                                 </tr>
                                 <tr v-if="filteredDocuments.length === 0">
-                                    <td colspan="5" class="p-10 text-center">
+                                    <td colspan="6" class="p-10 text-center">
                                         <div class="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                                             <i class="fas fa-folder-open text-slate-400 text-xl"></i>
                                         </div>
                                         <p class="text-sm font-medium text-slate-600">Документы не найдены</p>
-                                        <button v-if="role === 'contractor'" @click="currentTab = 'upload'" 
+                                        <button v-if="role === 'contractor'" @click="navigateTo('upload')" 
                                                 class="mt-4 text-xs font-bold text-blue-600 hover:text-blue-700 transition">
                                             → Загрузить документ
                                         </button>
@@ -282,7 +367,7 @@
                 </section>
 
                 <!-- TAB: UPLOAD -->
-                <section v-if="currentTab === 'upload'" class="max-w-2xl mx-auto py-6">
+                <section v-if="currentTab === 'upload'" class="max-w-2xl mx-auto py-4">
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                         <div class="flex items-center gap-3 mb-5">
                             <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
@@ -302,10 +387,31 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Заказ</label>
+                                <select v-model="uploadForm.orderId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
+                                    <option v-for="order in getOrdersByProject(uploadForm.projectId)" :key="order.id" :value="order.id">{{ order.name }}</option>
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Ответственный</label>
                                 <select v-model="uploadForm.responsibleId" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
                                     <option v-for="emp in employees" :key="emp.id" :value="emp.id">{{ emp.name }} • {{ emp.role }}</option>
                                 </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Тип файлов</label>
+                                <div class="flex gap-2">
+                                    <button @click="uploadForm.xmlOnly = true" 
+                                            :class="uploadForm.xmlOnly ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'"
+                                            class="px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                        <i class="fas fa-code mr-1"></i> Только XML
+                                    </button>
+                                    <button @click="uploadForm.xmlOnly = false" 
+                                            :class="!uploadForm.xmlOnly ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'"
+                                            class="px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                                        <i class="fas fa-files mr-1"></i> Все форматы
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Комментарий</label>
@@ -313,15 +419,16 @@
                             </div>
                         </div>
                         
+                        <!-- Drop Zone -->
                         <div @click="triggerUpload" 
                              class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/30 transition cursor-pointer group">
-                            <input type="file" ref="fileInput" @change="handleFile" class="hidden" accept=".xml,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg">
+                            <input type="file" ref="fileInput" @change="handleFile" class="hidden" :accept="uploadForm.xmlOnly ? '.xml' : '.xml,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg'">
                             
                             <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform shadow-sm">
                                 <i class="fas fa-file-import text-blue-500 text-xl"></i>
                             </div>
                             <p class="text-sm font-bold text-slate-700 mb-1">Выберите файл</p>
-                            <p class="text-[11px] text-slate-400">XML, PDF, DOCX, XLSX (макс. 50 МБ)</p>
+                            <p class="text-[11px] text-slate-400">{{ uploadForm.xmlOnly ? 'Только .xml файлы' : 'XML, PDF, DOCX, XLSX' }} (макс. 50 МБ)</p>
                             
                             <div v-if="uploadForm.fileName" class="mt-4 p-3 bg-white rounded-lg border border-slate-200 flex items-center gap-2">
                                 <i class="fas fa-file text-blue-500 text-sm"></i>
@@ -348,7 +455,7 @@
                 <section v-if="currentTab === 'audit'" class="max-w-3xl mx-auto">
                     <div class="space-y-3">
                         <div v-for="log in filteredAuditLogs" :key="log.id" 
-                             class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 hover:shadow-md transition">
+                             class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex items-start gap-4 no-hover">
                             <div :class="logIconClass(log.type)" 
                                  class="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-base ring-1 ring-inset ring-black/5">
                                 <i :class="logIcon(log.type)"></i>
@@ -379,58 +486,86 @@
                  @click.self="closeModal" @keydown.escape="closeModal" tabindex="-1">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
                 
-                <div class="modal-card relative bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-                    <!-- Header -->
-                    <div class="p-5 bg-slate-50 border-b flex justify-between items-start shrink-0">
-                        <div>
-                            <div class="flex items-center gap-3 mb-1">
-                                <div class="w-10 h-10 rounded-xl flex items-center justify-center" :class="getFileIconClass(selectedDoc.fileType)">
-                                    <i :class="getFileIcon(selectedDoc.fileType)" class="text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-black text-slate-800">{{ selectedDoc.number }}</h3>
-                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
-                                        {{ getFileTypeName(selectedDoc.fileType) }}
-                                    </p>
-                                </div>
+                <div class="modal-card relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                    <!-- Header (ONLY X button, no "Close") -->
+                    <div class="p-4 bg-slate-50 border-b flex justify-between items-start shrink-0">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl flex items-center justify-center" :class="getFileIconClass(selectedDoc.fileType)">
+                                <i :class="getFileIcon(selectedDoc.fileType)" class="text-lg"></i>
                             </div>
-                            <div class="flex items-center gap-2 mt-2">
-                                <span :class="statusBadge(selectedDoc.status)" class="text-[10px] py-0.5 px-2.5">{{ statusText(selectedDoc.status) }}</span>
-                                <span class="text-[10px] text-slate-400">• Версия {{ selectedDoc.version }}.0</span>
+                            <div>
+                                <h3 class="text-lg font-black text-slate-800">{{ selectedDoc.number }}</h3>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                                    {{ getFileTypeName(selectedDoc.fileType) }}
+                                </p>
                             </div>
                         </div>
-                        <button @click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0">
+                        <!-- Single close button -->
+                        <button @click="closeModal" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-800 shrink-0" title="Закрыть">
                             <i class="fas fa-times text-lg"></i>
                         </button>
                     </div>
                     
+                    <!-- Tabs: Preview | Editor | Versions -->
+                    <div class="border-b border-slate-200 bg-slate-50/50">
+                        <div class="flex px-4">
+                            <button @click="modalTab = 'preview'" 
+                                    :class="modalTab === 'preview' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-4 py-3 text-sm font-medium transition">
+                                <i class="fas fa-eye mr-2"></i>Предпросмотр
+                            </button>
+                            <button v-if="selectedDoc.fileType === 'xml'" @click="modalTab = 'editor'" 
+                                    :class="modalTab === 'editor' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-4 py-3 text-sm font-medium transition">
+                                <i class="fas fa-code mr-2"></i>Редактор
+                            </button>
+                            <button @click="modalTab = 'versions'" 
+                                    :class="modalTab === 'versions' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'"
+                                    class="px-4 py-3 text-sm font-medium transition">
+                                <i class="fas fa-code-branch mr-2"></i>Версии
+                            </button>
+                        </div>
+                    </div>
+                    
                     <!-- Content -->
-                    <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 overflow-y-auto">
-                        <div class="lg:col-span-2 space-y-5">
-                            <!-- Responsible -->
-                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                <label class="block text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Ответственный</label>
-                                <div class="flex items-center gap-3">
-                                    <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold ring-2 ring-white shadow-sm" 
-                                         :style="{ backgroundColor: getUserColor(selectedDoc.responsibleId) }">
-                                        {{ getUserInitials(selectedDoc.responsibleId) }}
+                    <div class="p-5 overflow-y-auto flex-1">
+                        
+                        <!-- PREVIEW TAB -->
+                        <div v-if="modalTab === 'preview'" class="space-y-5">
+                            <!-- Meta -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                    <label class="block text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Ответственный</label>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold ring-2 ring-white shadow-sm" 
+                                             :style="{ backgroundColor: getUserColor(selectedDoc.responsibleId) }">
+                                            {{ getUserInitials(selectedDoc.responsibleId) }}
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-bold text-slate-800">{{ getUserName(selectedDoc.responsibleId) }}</p>
+                                            <p class="text-[11px] text-slate-500">{{ getUserRole(selectedDoc.responsibleId) }}</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="text-sm font-bold text-slate-800">{{ getUserName(selectedDoc.responsibleId) }}</p>
-                                        <p class="text-[11px] text-slate-500">{{ getUserRole(selectedDoc.responsibleId) }}</p>
+                                </div>
+                                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                    <label class="block text-[10px] uppercase font-black text-slate-400 mb-3 tracking-widest">Контекст</label>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between"><span class="text-slate-500">Проект:</span> <span class="font-medium">{{ getProjectName(selectedDoc.projectId) }}</span></div>
+                                        <div class="flex justify-between"><span class="text-slate-500">Заказ:</span> <span class="font-medium">{{ getOrderName(selectedDoc.orderId) }}</span></div>
+                                        <div class="flex justify-between"><span class="text-slate-500">Версия:</span> <span class="font-medium">v{{ selectedDoc.version }}.0</span></div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- Validation Errors -->
+                            <!-- Validation Status -->
                             <div v-if="selectedDoc.status === 'invalid'" class="p-4 bg-rose-50 rounded-xl border border-rose-100">
                                 <p class="text-[10px] uppercase font-black text-rose-400 mb-2 flex items-center gap-2">
                                     <i class="fas fa-triangle-exclamation"></i> Ошибки проверки
                                 </p>
                                 <ul class="text-xs text-rose-700 space-y-1.5">
-                                    <li v-if="selectedDoc.fileType === 'xml'">❌ XSD Схема: Элемент '&lt;Contractor&gt;' не соответствует стандарту Минстроя.</li>
-                                    <li v-else-if="selectedDoc.fileType === 'pdf'">❌ Формат: Файл повреждён или защищён паролем.</li>
-                                    <li v-else>❌ Формат: Невозможно прочитать содержимое файла.</li>
+                                    <li v-if="selectedDoc.fileType === 'xml'">❌ XSD: Элемент '&lt;Contractor&gt;' не соответствует схеме Минстроя</li>
+                                    <li v-else-if="selectedDoc.fileType === 'pdf'">❌ Формат: Файл повреждён или защищён паролем</li>
+                                    <li v-else>❌ Формат: Невозможно прочитать содержимое</li>
                                 </ul>
                             </div>
                             
@@ -438,59 +573,72 @@
                                 <p class="text-[10px] uppercase font-black text-amber-400 mb-2 flex items-center gap-2">
                                     <i class="fas fa-spinner fa-spin"></i> Обработка
                                 </p>
-                                <p class="text-xs text-amber-700">Выполняется проверка файла на вирусы и соответствие формату...</p>
+                                <p class="text-xs text-amber-700">Выполняется проверка файла...</p>
                             </div>
 
-                            <!-- Quick Actions -->
-                            <div class="grid grid-cols-2 gap-3">
+                            <!-- Actions -->
+                            <div class="flex gap-3">
                                 <button @click="downloadFile(selectedDoc)" 
-                                        class="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition flex items-center justify-center gap-2 group">
+                                        class="flex-1 p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition flex items-center justify-center gap-2 group">
                                     <i class="fas fa-download text-blue-600 group-hover:scale-110 transition"></i>
                                     <span class="text-xs font-bold text-blue-700">Скачать файл</span>
                                 </button>
                                 <button v-if="role === 'contractor'" @click="openNewVersionModal(selectedDoc)"
-                                        class="p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition flex items-center justify-center gap-2 group">
+                                        class="flex-1 p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition flex items-center justify-center gap-2 group">
                                     <i class="fas fa-plus text-emerald-600 group-hover:scale-110 transition"></i>
                                     <span class="text-xs font-bold text-emerald-700">Новая версия</span>
                                 </button>
                             </div>
                         </div>
-
-                        <!-- Version History -->
-                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col">
-                            <h4 class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest flex items-center gap-2 shrink-0">
-                                <i class="fas fa-code-branch text-blue-500"></i> Версии
-                            </h4>
-                            <div class="space-y-3 overflow-y-auto flex-1 pr-1">
-                                <div v-for="version in [...selectedDoc.versions].reverse()" :key="version.id" 
-                                     class="p-3 bg-white rounded-lg border border-slate-100 hover:border-blue-200 transition group">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="text-xs font-black text-slate-700">v{{ version.number }}.0</span>
+                        
+                        <!-- EDITOR TAB (XML only) -->
+                        <div v-if="modalTab === 'editor' && selectedDoc.fileType === 'xml'" class="h-full">
+                            <div class="bg-slate-900 rounded-xl border border-slate-700 overflow-hidden">
+                                <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+                                    <span class="text-[11px] text-slate-300">{{ selectedDoc.number }}.xml</span>
+                                    <div class="flex items-center gap-2">
+                                        <button @click="formatXML" class="text-[10px] text-slate-400 hover:text-white transition px-2 py-1 rounded hover:bg-slate-700">
+                                            <i class="fas fa-indent mr-1"></i>Форматировать
+                                        </button>
+                                        <button @click="saveXMLEdit" class="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded transition">
+                                            <i class="fas fa-save mr-1"></i>Сохранить
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea v-model="xmlEditorContent" 
+                                          class="code-editor w-full h-64 sm:h-80 bg-slate-900 text-slate-100 p-4 outline-none resize-none"
+                                          spellcheck="false"></textarea>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2">⚠️ Изменения сохраняются локально. Для применения требуется повторная валидация.</p>
+                        </div>
+                        
+                        <!-- VERSIONS TAB -->
+                        <div v-if="modalTab === 'versions'" class="space-y-3">
+                            <div v-for="version in [...selectedDoc.versions].reverse()" :key="version.id" 
+                                 class="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-blue-200 transition">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm font-black text-slate-700 bg-white px-3 py-1 rounded-lg border">v{{ version.number }}.0</span>
                                         <span class="text-[10px] text-slate-400">{{ formatTime(version.uploadedAt) }}</span>
                                     </div>
-                                    <p v-if="version.comment" class="text-[11px] text-slate-600 mb-2 italic line-clamp-2">«{{ version.comment }}»</p>
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold ring-1 ring-black/5" 
-                                             :style="{ backgroundColor: getUserColor(version.uploadedBy) }">
-                                            {{ getUserInitials(version.uploadedBy) }}
-                                        </div>
-                                        <span class="text-[11px] font-medium text-slate-600">{{ getUserName(version.uploadedBy) }}</span>
-                                    </div>
-                                    <!-- КНОПКА СКАЧИВАНИЯ ДЛЯ КАЖДОЙ ВЕРСИИ -->
                                     <button @click="downloadVersion(selectedDoc, version)" 
-                                            class="mt-2.5 w-full text-[10px] font-bold text-blue-600 hover:bg-blue-50 py-1.5 rounded-lg transition flex items-center justify-center gap-1.5">
-                                        <i class="fas fa-download"></i> Скачать версию
+                                            class="text-[10px] font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                        <i class="fas fa-download"></i> Скачать
                                     </button>
+                                </div>
+                                <p v-if="version.comment" class="text-[11px] text-slate-600 mb-3 italic">«{{ version.comment }}»</p>
+                                <div class="flex items-center gap-2 text-[11px]">
+                                    <div class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold ring-1 ring-black/5" 
+                                         :style="{ backgroundColor: getUserColor(version.uploadedBy) }">
+                                        {{ getUserInitials(version.uploadedBy) }}
+                                    </div>
+                                    <span class="text-slate-600">{{ getUserName(version.uploadedBy) }}</span>
+                                    <span class="text-slate-300 mx-1">•</span>
+                                    <span class="text-slate-400">{{ getUserRole(version.uploadedBy) }}</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Footer -->
-                    <div class="p-5 bg-slate-50 border-t flex justify-end gap-3 shrink-0">
-                        <button @click="closeModal" class="px-5 py-2.5 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition shadow-lg shadow-slate-900/20">
-                            Закрыть
-                        </button>
+                        
                     </div>
                 </div>
             </div>
@@ -501,21 +649,28 @@
             <div v-if="showNewVersionModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4" @click.self="showNewVersionModal = false">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
                 <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-6">
-                    <h3 class="text-lg font-black text-slate-800 mb-1">Новая версия документа</h3>
-                    <p class="text-[11px] text-slate-400 mb-4">{{ newVersionForm.docNumber }} • Текущая: v{{ newVersionForm.currentVersion }}</p>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h3 class="text-lg font-black text-slate-800">Новая версия</h3>
+                            <p class="text-[11px] text-slate-400">{{ newVersionForm.docNumber }} • Текущая: v{{ newVersionForm.currentVersion }}</p>
+                        </div>
+                        <button @click="showNewVersionModal = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition text-slate-400">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Файл новой версии *</label>
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Файл *</label>
                             <div @click="triggerNewVersionUpload" 
                                  class="border-2 border-dashed border-slate-200 bg-slate-50 rounded-xl p-6 text-center hover:border-blue-400 hover:bg-blue-50/30 transition cursor-pointer">
-                                <input type="file" ref="newVersionFileInput" @change="handleNewVersionFile" class="hidden" accept=".xml,.pdf,.doc,.docx,.xls,.xlsx,.png,.jpg">
+                                <input type="file" ref="newVersionFileInput" @change="handleNewVersionFile" class="hidden" :accept="newVersionForm.xmlOnly ? '.xml' : '.xml,.pdf,.doc,.docx,.xls,.xlsx'">
                                 
                                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center mx-auto mb-3 shadow-sm">
                                     <i class="fas fa-cloud-upload-alt text-blue-500 text-lg"></i>
                                 </div>
                                 <p class="text-xs font-bold text-slate-700 mb-1">Выберите файл</p>
-                                <p class="text-[10px] text-slate-400">Макс. 50 МБ</p>
+                                <p class="text-[10px] text-slate-400">{{ newVersionForm.xmlOnly ? 'Только .xml' : 'XML, PDF, DOCX' }} • макс. 50 МБ</p>
                                 
                                 <div v-if="newVersionForm.fileName" class="mt-3 p-2 bg-white rounded-lg border border-slate-200 flex items-center gap-2">
                                     <i class="fas fa-file text-blue-500 text-xs"></i>
@@ -527,9 +682,14 @@
                             </div>
                         </div>
                         
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" v-model="newVersionForm.xmlOnly" id="xmlOnlyNewVer" class="rounded text-blue-600">
+                            <label for="xmlOnlyNewVer" class="text-xs text-slate-600">Только валидные XML-файлы</label>
+                        </div>
+                        
                         <div>
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Комментарий к версии</label>
-                            <textarea v-model="newVersionForm.comment" rows="3" placeholder="Что изменилось в этой версии?" 
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Комментарий</label>
+                            <textarea v-model="newVersionForm.comment" rows="3" placeholder="Что изменилось?" 
                                       class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition resize-none"></textarea>
                         </div>
                     </div>
@@ -551,17 +711,22 @@
             <div v-if="showNewProjectModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4" @click.self="showNewProjectModal = false">
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
                 <div class="relative bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 p-6">
-                    <h3 class="text-lg font-black text-slate-800 mb-4">Новый проект</h3>
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-black text-slate-800">Новый проект</h3>
+                        <button @click="showNewProjectModal = false" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition text-slate-400">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                     
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Название проекта *</label>
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Название *</label>
                             <input v-model="newProjectForm.name" type="text" placeholder="Например: ЖК Солнечный" 
                                    class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition">
                         </div>
                         
                         <div>
-                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Цвет метки</label>
+                            <label class="block text-[10px] uppercase font-black text-slate-400 mb-2 tracking-widest">Цвет</label>
                             <div class="flex gap-2">
                                 <button v-for="color in projectColors" :key="color" 
                                         @click="newProjectForm.color = color"
@@ -589,7 +754,7 @@
                         <button @click="showNewProjectModal = false" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-800">Отмена</button>
                         <button @click="createProject" :disabled="!newProjectForm.name" 
                                 class="px-5 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
-                            Создать проект
+                            Создать
                         </button>
                     </div>
                 </div>
@@ -606,20 +771,37 @@
                 // === STATE ===
                 const role = ref('contractor');
                 const currentTab = ref('registry');
+                const modalTab = ref('preview');
                 const selectedDoc = ref(null);
                 const showUserMenu = ref(false);
                 const uploading = ref(false);
                 const selectedProject = ref('all');
+                const selectedOrder = ref(null);
                 const showNewProjectModal = ref(false);
                 const showNewVersionModal = ref(false);
                 const uploadingNewVersion = ref(false);
                 
-                // === DATA: Projects ===
+                // Sidebar state
+                const sidebarOpen = ref(false);
+                const sidebarCollapsed = ref(false);
+                const isMobile = ref(window.innerWidth < 768);
+                
+                // Tree view state
+                const expandedProjects = ref([]);
+                const expandedOrders = ref([]);
+                
+                // === DATA: Projects & Orders ===
                 const projects = ref([
                     { id: 'park-2', name: 'ЖК Артвелл Парк, корп. 2', color: '#3b82f6', icon: '🏢' },
                     { id: 'park-3', name: 'ЖК Артвелл Парк, корп. 3', color: '#8b5cf6', icon: '🏗️' },
                     { id: 'business-center', name: 'БЦ Невский Плаза', color: '#10b981', icon: '🏬' },
                     { id: 'infrastructure', name: 'Инфраструктура квартала', color: '#f59e0b', icon: '🛣️' }
+                ]);
+                
+                const orders = ref([
+                    { id: 'order-1', name: 'Заказ №2026-001', projectId: 'park-2', docsCount: 3 },
+                    { id: 'order-2', name: 'Заказ №2026-002', projectId: 'park-2', docsCount: 1 },
+                    { id: 'order-3', name: 'Заказ №БЦ-045', projectId: 'business-center', docsCount: 2 }
                 ]);
                 
                 const employees = ref([
@@ -634,11 +816,12 @@
                 // === Upload Form ===
                 const uploadForm = ref({
                     projectId: 'park-2',
+                    orderId: 'order-1',
                     responsibleId: 'anna',
                     comment: '',
                     fileName: '',
                     fileType: '',
-                    fileContent: null // Для эмуляции скачивания
+                    xmlOnly: true
                 });
 
                 // New Version Form
@@ -649,15 +832,11 @@
                     fileName: '',
                     fileType: '',
                     comment: '',
-                    fileContent: null
+                    xmlOnly: true
                 });
 
                 // New Project Form
-                const newProjectForm = ref({
-                    name: '',
-                    color: '#3b82f6',
-                    icon: '🏢'
-                });
+                const newProjectForm = ref({ name: '', color: '#3b82f6', icon: '🏢' });
                 
                 const projectColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
                 const projectIcons = ['🏢', '🏗️', '🏬', '🏭', '🛣️', '🌉', '🏡', '🏨'];
@@ -675,12 +854,14 @@
                 let logIdCounter = 4;
                 let versionIdCounter = 4;
                 let projectIdCounter = 5;
+                let orderIdCounter = 4;
 
-                // === Documents ===
+                // === Documents (with order reference) ===
                 const documents = ref([
                     { 
                         id: 1, number: 'АКТ-001/2026', status: 'valid', version: 2, 
-                        updatedAt: '2026-03-26T14:00:00', projectId: 'park-2', responsibleId: 'anna',
+                        updatedAt: '2026-03-26T14:00:00', 
+                        projectId: 'park-2', orderId: 'order-1', responsibleId: 'anna',
                         fileType: 'xml',
                         versions: [
                             { id: 1, number: 1, uploadedAt: '2026-03-20T10:00:00', uploadedBy: 'anna', comment: 'Первичная загрузка' },
@@ -689,23 +870,34 @@
                     },
                     { 
                         id: 2, number: 'Смета_Март.pdf', status: 'valid', version: 1, 
-                        updatedAt: '2026-03-25T09:15:00', projectId: 'park-2', responsibleId: 'elena',
+                        updatedAt: '2026-03-25T09:15:00', 
+                        projectId: 'park-2', orderId: 'order-1', responsibleId: 'elena',
                         fileType: 'pdf',
                         versions: [{ id: 3, number: 1, uploadedAt: '2026-03-25T09:15:00', uploadedBy: 'elena', comment: 'Смета на материалы' }]
                     },
                     { 
                         id: 3, number: 'ПРЕДПИС-12-А.docx', status: 'invalid', version: 1, 
-                        updatedAt: '2026-03-24T18:30:00', projectId: 'business-center', responsibleId: 'mikhail',
+                        updatedAt: '2026-03-24T18:30:00', 
+                        projectId: 'business-center', orderId: 'order-3', responsibleId: 'mikhail',
                         fileType: 'doc',
                         versions: [{ id: 4, number: 1, uploadedAt: '2026-03-24T18:30:00', uploadedBy: 'mikhail', comment: 'Предписание' }]
                     }
                 ]);
 
                 const auditLogs = ref([
-                    { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', message: 'Загружен: АКТ-001/2026 (XML)', time: '2026-03-26T14:00:00' },
-                    { id: 2, type: 'upload', userId: 'elena', projectId: 'park-2', message: 'Загружен: Смета_Март.pdf', time: '2026-03-25T09:15:00' },
-                    { id: 3, type: 'error', userId: 'system', projectId: 'business-center', message: 'Ошибка формата: ПРЕДПИС-12-А.docx', time: '2026-03-24T18:30:00' }
+                    { id: 1, type: 'upload', userId: 'anna', projectId: 'park-2', orderId: 'order-1', message: 'Загружен: АКТ-001/2026 (XML)', time: '2026-03-26T14:00:00' },
+                    { id: 2, type: 'upload', userId: 'elena', projectId: 'park-2', orderId: 'order-1', message: 'Загружен: Смета_Март.pdf', time: '2026-03-25T09:15:00' },
+                    { id: 3, type: 'error', userId: 'system', projectId: 'business-center', orderId: 'order-3', message: 'Ошибка формата: ПРЕДПИС-12-А.docx', time: '2026-03-24T18:30:00' }
                 ]);
+
+                // XML Editor content
+                const xmlEditorContent = ref(`<?xml version="1.0" encoding="UTF-8"?>
+<Document>
+  <Number>АКТ-001/2026</Number>
+  <Status>Valid</Status>
+  <Contractor>ООО "СтройМастер"</Contractor>
+  <Date>2026-03-26</Date>
+</Document>`);
 
                 // === COMPUTED ===
                 const currentTabName = computed(() => ({
@@ -718,12 +910,29 @@
                     filterResponsible.value !== 'all' || filterStatus.value !== 'all' || filterType.value !== 'all'
                 );
 
+                const sidebarClasses = computed(() => {
+                    const base = 'sidebar-transition z-40 h-full bg-slate-900 text-white flex flex-col shadow-xl';
+                    if (isMobile.value) {
+                        return `${base} fixed top-0 left-0 w-72 transform ${sidebarOpen.value ? 'translate-x-0' : '-translate-x-full'}`;
+                    }
+                    if (sidebarCollapsed.value) {
+                        return `${base} w-20`;
+                    }
+                    return `${base} w-72`;
+                });
+
                 const filteredDocuments = computed(() => {
                     let result = [...documents.value];
                     
+                    // Project filter (FIX: preserve context when navigating)
                     if (selectedProject.value && selectedProject.value !== 'all') {
                         result = result.filter(d => d.projectId === selectedProject.value);
                     }
+                    // Order filter
+                    if (selectedOrder.value) {
+                        result = result.filter(d => d.orderId === selectedOrder.value);
+                    }
+                    
                     if (filterResponsible.value !== 'all') result = result.filter(d => d.responsibleId === filterResponsible.value);
                     if (filterStatus.value !== 'all') result = result.filter(d => d.status === filterStatus.value);
                     if (filterType.value !== 'all') result = result.filter(d => d.fileType === filterType.value);
@@ -741,11 +950,15 @@
                     if (selectedProject.value && selectedProject.value !== 'all') {
                         result = result.filter(l => l.projectId === selectedProject.value);
                     }
+                    if (selectedOrder.value) {
+                        result = result.filter(l => l.orderId === selectedOrder.value);
+                    }
                     return result.sort((a, b) => new Date(b.time) - new Date(a.time));
                 });
 
                 const canUpload = computed(() => 
-                    uploadForm.value.projectId && uploadForm.value.responsibleId && uploadForm.value.fileName
+                    uploadForm.value.projectId && uploadForm.value.orderId && 
+                    uploadForm.value.responsibleId && uploadForm.value.fileName
                 );
 
                 const canSubmitNewVersion = computed(() => 
@@ -755,6 +968,10 @@
                 // === HELPERS ===
                 const getProjectName = (id) => projects.value.find(p => p.id === id)?.name || '—';
                 const getProjectColor = (id) => projects.value.find(p => p.id === id)?.color || '#64748b';
+                const getOrderName = (id) => orders.value.find(o => o.id === id)?.name || '—';
+                
+                const getOrdersByProject = (projectId) => orders.value.filter(o => o.projectId === projectId);
+                const getDocumentsByOrder = (orderId) => documents.value.filter(d => d.orderId === orderId);
                 
                 const getUserName = (id) => employees.value.find(e => e.id === id)?.name || 'Неизвестный';
                 const getUserRole = (id) => employees.value.find(e => e.id === id)?.role || '';
@@ -766,7 +983,6 @@
                 };
 
                 const getProjectDocsCount = (projectId) => documents.value.filter(d => d.projectId === projectId).length;
-
                 const getProjectBadgeStyle = (projectId) => {
                     const count = getProjectDocsCount(projectId);
                     const project = projects.value.find(p => p.id === projectId);
@@ -778,18 +994,18 @@
                     const icons = { xml: 'fas fa-code', pdf: 'fas fa-file-pdf', doc: 'fas fa-file-word', xls: 'fas fa-file-excel', img: 'fas fa-file-image' };
                     return icons[type] || 'fas fa-file';
                 };
-
+                const getFileIconColor = (type) => {
+                    const colors = { xml: '#3b82f6', pdf: '#ef4444', doc: '#3b82f6', xls: '#22c55e', img: '#a855f7' };
+                    return colors[type] || '#64748b';
+                };
                 const getFileIconClass = (type) => {
                     const classes = { 
-                        xml: 'bg-blue-100 text-blue-600', 
-                        pdf: 'bg-red-100 text-red-600', 
-                        doc: 'bg-blue-100 text-blue-700', 
-                        xls: 'bg-green-100 text-green-700',
+                        xml: 'bg-blue-100 text-blue-600', pdf: 'bg-red-100 text-red-600', 
+                        doc: 'bg-blue-100 text-blue-700', xls: 'bg-green-100 text-green-700',
                         img: 'bg-purple-100 text-purple-600'
                     };
                     return classes[type] || 'bg-slate-100 text-slate-600';
                 };
-
                 const getFileTypeName = (type) => {
                     const names = { xml: 'XML Схема', pdf: 'PDF Документ', doc: 'Word Doc', xls: 'Excel Sheet', img: 'Изображение' };
                     return names[type] || 'Файл';
@@ -799,7 +1015,6 @@
                     if (!isoString) return '—';
                     return new Date(isoString).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '');
                 };
-
                 const formatTime = (isoString) => {
                     if (!isoString) return '—';
                     const date = new Date(isoString);
@@ -813,10 +1028,14 @@
                     const styles = { valid: "bg-emerald-50 text-emerald-600 border border-emerald-200", invalid: "bg-rose-50 text-rose-600 border border-rose-200", processing: "bg-amber-50 text-amber-600 border border-amber-200" };
                     return base + (styles[s] || styles.processing);
                 };
-
+                const statusBadgeMini = (s) => {
+                    const styles = { valid: "bg-emerald-100 text-emerald-700", invalid: "bg-rose-100 text-rose-700", processing: "bg-amber-100 text-amber-700" };
+                    return styles[s] || styles.processing;
+                };
                 const statusText = (s) => ({ valid: 'Валиден', invalid: 'Ошибка', processing: 'Анализ...' }[s]);
+                const statusTextMini = (s) => ({ valid: '✓', invalid: '✕', processing: '...' }[s]);
 
-                const navClass = (tab, isActive) => {
+                const navClass = (tab) => {
                     const base = "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ";
                     if (currentTab.value === tab) return base + "bg-blue-600 text-white shadow-lg shadow-blue-600/25";
                     return base + "text-slate-400 hover:text-white hover:bg-slate-800";
@@ -825,211 +1044,300 @@
                 const logIconClass = (t) => ({ upload: 'bg-blue-50 text-blue-600', error: 'bg-rose-50 text-rose-600', view: 'bg-indigo-50 text-indigo-600' }[t]);
                 const logIcon = (t) => ({ upload: 'fas fa-arrow-up', error: 'fas fa-triangle-exclamation', view: 'fas fa-eye' }[t]);
 
-                // === ACTIONS ===
+                // === SIDEBAR & NAVIGATION ===
+                const toggleSidebar = () => {
+                    if (isMobile.value) sidebarOpen.value = !sidebarOpen.value;
+                };
+                
+                const toggleSidebarCollapse = () => {
+                    if (!isMobile.value) sidebarCollapsed.value = !sidebarCollapsed.value;
+                };
+                
+                const navigateTo = (tab) => {
+                    currentTab.value = tab;
+                    // FIX: Don't reset project when navigating to registry
+                    if (tab === 'registry' && isMobile.value) sidebarOpen.value = false;
+                };
+                
                 const selectProject = (projectId) => {
                     selectedProject.value = projectId;
+                    selectedOrder.value = null; // Reset order when changing project
                     if (currentTab.value !== 'registry') currentTab.value = 'registry';
+                    if (isMobile.value) sidebarOpen.value = false;
+                };
+                
+                const toggleOrderExpand = (orderId) => {
+                    const idx = expandedOrders.value.indexOf(orderId);
+                    if (idx === -1) expandedOrders.value.push(orderId);
+                    else expandedOrders.value.splice(idx, 1);
                 };
 
-                const resetFilters = () => {
-                    filterResponsible.value = 'all';
-                    filterStatus.value = 'all';
-                    filterType.value = 'all';
-                    searchQuery.value = '';
-                };
-
+                // === MODALS & ACTIONS ===
+                const toggleUserMenu = () => { showUserMenu.value = !showUserMenu.value; };
+                
                 const openNewProjectModal = () => {
                     newProjectForm.value = { name: '', color: '#3b82f6', icon: '🏢' };
                     showNewProjectModal.value = true;
                 };
-
+                
                 const createProject = () => {
                     if (!newProjectForm.value.name) return;
-                    
                     const newId = 'proj-' + projectIdCounter++;
                     projects.value.push({
-                        id: newId,
-                        name: newProjectForm.value.name,
-                        color: newProjectForm.value.color,
-                        icon: newProjectForm.value.icon
+                        id: newId, name: newProjectForm.value.name,
+                        color: newProjectForm.value.color, icon: newProjectForm.value.icon
                     });
-                    
+                    orders.value.push({ id: 'order-'+orderIdCounter++, name: 'Новый заказ', projectId: newId, docsCount: 0 });
                     auditLogs.value.unshift({
-                        id: logIdCounter++,
-                        type: 'upload',
-                        userId: currentUser.value.id,
-                        projectId: newId,
-                        message: `Создан новый проект: ${newProjectForm.value.name}`,
+                        id: logIdCounter++, type: 'upload', userId: currentUser.value.id,
+                        projectId: newId, message: `Создан проект: ${newProjectForm.value.name}`,
                         time: new Date().toISOString()
                     });
-                    
                     showNewProjectModal.value = false;
                     selectProject(newId);
                 };
 
-                // === DOWNLOAD FUNCTIONS ===
+                // === DOWNLOAD ===
                 const downloadFile = (doc) => {
                     const content = generateMockFileContent(doc.fileType, doc.number);
                     triggerDownload(content, `${doc.number}.${getFileExtension(doc.fileType)}`);
-                    
-                    // Log download
                     auditLogs.value.unshift({
-                        id: logIdCounter++,
-                        type: 'view',
-                        userId: currentUser.value.id,
-                        projectId: doc.projectId,
-                        message: `Скачан файл: ${doc.number} (v${doc.version}.0)`,
+                        id: logIdCounter++, type: 'view', userId: currentUser.value.id,
+                        projectId: doc.projectId, orderId: doc.orderId,
+                        message: `Скачан: ${doc.number} (v${doc.version})`,
                         time: new Date().toISOString()
                     });
                 };
-
+                
                 const downloadVersion = (doc, version) => {
                     const content = generateMockFileContent(doc.fileType, `${doc.number}_v${version.number}`);
                     triggerDownload(content, `${doc.number}_v${version.number}.${getFileExtension(doc.fileType)}`);
-                    
                     auditLogs.value.unshift({
-                        id: logIdCounter++,
-                        type: 'view',
-                        userId: currentUser.value.id,
-                        projectId: doc.projectId,
-                        message: `Скачана версия ${version.number}.0: ${doc.number}`,
+                        id: logIdCounter++, type: 'view', userId: currentUser.value.id,
+                        projectId: doc.projectId, orderId: doc.orderId,
+                        message: `Скачана версия ${version.number}: ${doc.number}`,
                         time: new Date().toISOString()
                     });
                 };
-
+                
                 const generateMockFileContent = (fileType, docName) => {
-                    // Генерируем разное содержимое в зависимости от типа файла
                     const contents = {
                         xml: `<?xml version="1.0" encoding="UTF-8"?>\n<Document>\n  <Number>${docName}</Number>\n  <Status>Valid</Status>\n  <Generated>${new Date().toISOString()}</Generated>\n</Document>`,
-                        pdf: `%PDF-1.4\n%Mock PDF Content for ${docName}\nGenerated: ${new Date().toISOString()}`,
-                        doc: `Mock Word Document Content\nDocument: ${docName}\nGenerated: ${new Date().toISOString()}`,
-                        xls: `Mock Excel Content\nDocument: ${docName}\nGenerated: ${new Date().toISOString()}`,
-                        img: `Mock Image Data for ${docName}`
+                        pdf: `%PDF-1.4\n%Mock PDF: ${docName}\nGenerated: ${new Date().toISOString()}`,
+                        doc: `Mock Word: ${docName}\nGenerated: ${new Date().toISOString()}`,
+                        xls: `Mock Excel: ${docName}\nGenerated: ${new Date().toISOString()}`,
+                        img: `Mock Image: ${docName}`
                     };
                     return contents[fileType] || contents.xml;
                 };
-
+                
                 const getFileExtension = (fileType) => {
-                    const extensions = { xml: 'xml', pdf: 'pdf', doc: 'docx', xls: 'xlsx', img: 'png' };
-                    return extensions[fileType] || 'xml';
+                    const ext = { xml: 'xml', pdf: 'pdf', doc: 'docx', xls: 'xlsx', img: 'png' };
+                    return ext[fileType] || 'xml';
                 };
-
+                
                 const triggerDownload = (content, filename) => {
                     const blob = new Blob([content], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    a.href = url; a.download = filename;
+                    document.body.appendChild(a); a.click();
+                    document.body.removeChild(a); URL.revokeObjectURL(url);
                 };
 
-                // === NEW VERSION FUNCTIONS ===
+                // === XML EDITOR ===
+                const formatXML = () => {
+                    // Simple indent formatter for demo
+                    let formatted = xmlEditorContent.value.replace(/></g, '>\n<');
+                    let indent = 0;
+                    formatted = formatted.split('\n').map(line => {
+                        if (line.trim().startsWith('</')) indent--;
+                        const result = '  '.repeat(Math.max(0, indent)) + line.trim();
+                        if (line.trim().startsWith('<') && !line.trim().startsWith('</') && !line.trim().endsWith('/>')) indent++;
+                        return result;
+                    }).join('\n');
+                    xmlEditorContent.value = formatted;
+                };
+                
+                const saveXMLEdit = () => {
+                    // In real app: send to backend for validation
+                    alert('✓ Изменения сохранены локально. Для применения требуется повторная валидация.');
+                    auditLogs.value.unshift({
+                        id: logIdCounter++, type: 'upload', userId: currentUser.value.id,
+                        projectId: selectedDoc.value?.projectId,
+                        message: `Отредактирован: ${selectedDoc.value?.number} (онлайн)`,
+                        time: new Date().toISOString()
+                    });
+                };
+
+                // === NEW VERSION ===
                 const openNewVersionModal = (doc) => {
                     newVersionForm.value = {
-                        docId: doc.id,
-                        docNumber: doc.number,
-                        currentVersion: doc.version,
-                        fileName: '',
-                        fileType: '',
-                        comment: '',
-                        fileContent: null
+                        docId: doc.id, docNumber: doc.number, currentVersion: doc.version,
+                        fileName: '', fileType: '', comment: '', xmlOnly: true
                     };
+                    modalTab.value = 'versions'; // Switch to versions tab
                     showNewVersionModal.value = true;
                 };
-
-                const triggerNewVersionUpload = () => {
-                    newVersionFileInput.value?.click();
-                };
-
+                
+                const triggerNewVersionUpload = () => newVersionFileInput.value?.click();
+                
                 const handleNewVersionFile = (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
+                    if (file.size > 50 * 1024 * 1024) { alert('Файл > 50 МБ'); e.target.value = ''; return; }
                     
-                    if (file.size > 50 * 1024 * 1024) {
-                        alert('Файл превышает лимит 50 МБ');
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const type = {xml:'xml', pdf:'pdf', doc:'doc', docx:'doc', xls:'xls', xlsx:'xls', jpg:'img', png:'img', jpeg:'img'}[ext] || 'other';
+                    
+                    if (newVersionForm.value.xmlOnly && type !== 'xml') {
+                        alert('Включён режим "Только XML". Выберите .xml файл.');
                         e.target.value = '';
                         return;
                     }
                     
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    let type = 'other';
-                    if (ext === 'xml') type = 'xml';
-                    else if (ext === 'pdf') type = 'pdf';
-                    else if (['doc', 'docx'].includes(ext)) type = 'doc';
-                    else if (['xls', 'xlsx'].includes(ext)) type = 'xls';
-                    else if (['jpg', 'png', 'jpeg'].includes(ext)) type = 'img';
-                    
                     newVersionForm.value.fileName = file.name;
                     newVersionForm.value.fileType = type;
                 };
-
+                
                 const submitNewVersion = async () => {
                     if (!canSubmitNewVersion.value) return;
-                    
                     uploadingNewVersion.value = true;
-                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    await new Promise(r => setTimeout(r, 1500));
                     
                     const doc = documents.value.find(d => d.id === newVersionForm.value.docId);
                     if (!doc) return;
                     
                     const now = new Date().toISOString();
                     const newVer = doc.version + 1;
-                    const type = newVersionForm.value.fileType;
                     
-                    // Добавляем новую версию
                     doc.versions.push({
-                        id: versionIdCounter++,
-                        number: newVer,
-                        uploadedAt: now,
-                        uploadedBy: currentUser.value.id,
-                        comment: newVersionForm.value.comment || 'Новая версия файла'
+                        id: versionIdCounter++, number: newVer, uploadedAt: now,
+                        uploadedBy: currentUser.value.id, comment: newVersionForm.value.comment || 'Новая версия'
                     });
                     
-                    // Обновляем документ
-                    doc.version = newVer;
-                    doc.updatedAt = now;
-                    doc.status = 'processing';
-                    doc.responsibleId = currentUser.value.id;
-                    doc.fileType = type; // Обновляем тип файла если изменился
+                    doc.version = newVer; doc.updatedAt = now; doc.status = 'processing';
+                    doc.responsibleId = currentUser.value.id; doc.fileType = newVersionForm.value.fileType;
                     
-                    // Лог
                     auditLogs.value.unshift({
-                        id: logIdCounter++,
-                        type: 'upload',
-                        userId: currentUser.value.id,
-                        projectId: doc.projectId,
-                        message: `Создана версия ${newVer}.0: ${doc.number}`,
-                        time: now
+                        id: logIdCounter++, type: 'upload', userId: currentUser.value.id,
+                        projectId: doc.projectId, orderId: doc.orderId,
+                        message: `Версия ${newVer}: ${doc.number}`, time: now
                     });
                     
-                    // Эмуляция валидации
                     setTimeout(() => {
                         const d = documents.value.find(x => x.id === doc.id);
                         if (d) {
-                            const isError = type === 'xml' ? Math.random() > 0.7 : Math.random() > 0.9;
+                            const isError = d.fileType === 'xml' ? Math.random() > 0.7 : Math.random() > 0.9;
                             d.status = isError ? 'invalid' : 'valid';
-                            
                             auditLogs.value.unshift({
-                                id: logIdCounter++,
-                                type: d.status === 'valid' ? 'upload' : 'error',
-                                userId: 'system',
-                                projectId: d.projectId,
-                                message: d.status === 'valid' 
-                                    ? `Валидация успешна: ${d.number} (v${newVer})` 
-                                    : `Ошибка валидации: ${d.number} (v${newVer})`,
+                                id: logIdCounter++, type: d.status === 'valid' ? 'upload' : 'error',
+                                userId: 'system', projectId: d.projectId,
+                                message: d.status === 'valid' ? `✓ Валидация: ${d.number} v${newVer}` : `✕ Ошибка: ${d.number} v${newVer}`,
                                 time: new Date().toISOString()
                             });
                         }
                     }, 1500);
                     
-                    showNewVersionModal.value = false;
-                    uploadingNewVersion.value = false;
-                    
-                    // Сброс инпута
+                    showNewVersionModal.value = false; uploadingNewVersion.value = false;
                     if (newVersionFileInput.value) newVersionFileInput.value.value = '';
+                };
+
+                // === FILE UPLOAD ===
+                const triggerUpload = () => fileInput.value?.click();
+                
+                const handleFile = (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 50 * 1024 * 1024) { alert('Файл > 50 МБ'); e.target.value = ''; return; }
+                    
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const type = {xml:'xml', pdf:'pdf', doc:'doc', docx:'doc', xls:'xls', xlsx:'xls', jpg:'img', png:'img', jpeg:'img'}[ext] || 'other';
+                    
+                    if (uploadForm.value.xmlOnly && type !== 'xml') {
+                        alert('Режим "Только XML": выберите .xml файл');
+                        e.target.value = '';
+                        return;
+                    }
+                    
+                    uploadForm.value.fileName = file.name;
+                    uploadForm.value.fileType = type;
+                };
+                
+                const resetUploadForm = () => {
+                    uploadForm.value = {
+                        projectId: selectedProject.value !== 'all' ? selectedProject.value : 'park-2',
+                        orderId: selectedOrder.value || getOrdersByProject(selectedProject.value !== 'all' ? selectedProject.value : 'park-2')[0]?.id || '',
+                        responsibleId: currentUser.value.id, comment: '', fileName: '', fileType: '', xmlOnly: true
+                    };
+                    if (fileInput.value) fileInput.value.value = '';
+                };
+                
+                const submitUpload = async () => {
+                    if (!canUpload.value) return;
+                    uploading.value = true;
+                    await new Promise(r => setTimeout(r, 1500));
+                    
+                    const fileName = uploadForm.value.fileName;
+                    const now = new Date().toISOString();
+                    const type = uploadForm.value.fileType;
+                    
+                    const newDoc = {
+                        id: docIdCounter++, number: fileName.replace(/\.[^/.]+$/, ""),
+                        status: 'processing', version: 1, updatedAt: now,
+                        projectId: uploadForm.value.projectId, orderId: uploadForm.value.orderId,
+                        responsibleId: uploadForm.value.responsibleId, fileType: type,
+                        versions: [{ id: versionIdCounter++, number: 1, uploadedAt: now, uploadedBy: uploadForm.value.responsibleId, comment: uploadForm.value.comment || 'Загрузка' }]
+                    };
+                    
+                    documents.value.unshift(newDoc);
+                    // Update order docs count
+                    const order = orders.value.find(o => o.id === uploadForm.value.orderId);
+                    if (order) order.docsCount++;
+                    
+                    auditLogs.value.unshift({
+                        id: logIdCounter++, type: 'upload', userId: uploadForm.value.responsibleId,
+                        projectId: uploadForm.value.projectId, orderId: uploadForm.value.orderId,
+                        message: `Загружен: ${fileName} (${type.toUpperCase()})`, time: now
+                    });
+                    
+                    setTimeout(() => {
+                        const doc = documents.value.find(d => d.id === newDoc.id);
+                        if (doc) {
+                            const isError = type === 'xml' ? Math.random() > 0.7 : Math.random() > 0.9;
+                            doc.status = isError ? 'invalid' : 'valid';
+                            auditLogs.value.unshift({
+                                id: logIdCounter++, type: doc.status === 'valid' ? 'upload' : 'error',
+                                userId: 'system', projectId: doc.projectId,
+                                message: doc.status === 'valid' ? `✓ Проверка: ${doc.number}` : `✕ Ошибка: ${doc.number}`,
+                                time: new Date().toISOString()
+                            });
+                        }
+                        uploading.value = false; resetUploadForm();
+                    }, 1500);
+                };
+
+                // === MODAL ===
+                const openModal = (doc) => {
+                    selectedDoc.value = { ...doc, versions: [...doc.versions] };
+                    xmlEditorContent.value = generateMockFileContent(doc.fileType, doc.number);
+                    modalTab.value = 'preview';
+                    document.body.style.overflow = 'hidden';
+                };
+                
+                const closeModal = () => {
+                    selectedDoc.value = null;
+                    document.body.style.overflow = '';
+                };
+                
+                const resetFilters = () => {
+                    filterResponsible.value = 'all'; filterStatus.value = 'all'; filterType.value = 'all'; searchQuery.value = '';
+                };
+
+                // === RESPONSIVE ===
+                const handleResize = () => {
+                    isMobile.value = window.innerWidth < 768;
+                    if (!isMobile.value) sidebarOpen.value = false;
                 };
 
                 const handleKeydown = (e) => {
@@ -1040,136 +1348,44 @@
                     }
                 };
 
-                onMounted(() => window.addEventListener('keydown', handleKeydown));
-                onUnmounted(() => window.removeEventListener('keydown', handleKeydown));
-
-                const openModal = (doc) => {
-                    selectedDoc.value = { ...doc, versions: [...doc.versions] };
-                    document.body.style.overflow = 'hidden';
-                };
-                
-                const closeModal = () => {
-                    selectedDoc.value = null;
-                    document.body.style.overflow = '';
-                };
-
-                const toggleUserMenu = () => showUserMenu.value = !showUserMenu.value;
-
-                const triggerUpload = () => fileInput.value?.click();
-
-                const handleFile = (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    
-                    if (file.size > 50 * 1024 * 1024) {
-                        alert('Файл превышает лимит 50 МБ');
-                        e.target.value = '';
-                        return;
-                    }
-                    
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    let type = 'other';
-                    if (ext === 'xml') type = 'xml';
-                    else if (ext === 'pdf') type = 'pdf';
-                    else if (['doc', 'docx'].includes(ext)) type = 'doc';
-                    else if (['xls', 'xlsx'].includes(ext)) type = 'xls';
-                    else if (['jpg', 'png', 'jpeg'].includes(ext)) type = 'img';
-                    
-                    uploadForm.value.fileName = file.name;
-                    uploadForm.value.fileType = type;
-                };
-
-                const resetUploadForm = () => {
-                    uploadForm.value = {
-                        projectId: selectedProject.value !== 'all' ? selectedProject.value : 'park-2',
-                        responsibleId: currentUser.value.id,
-                        comment: '',
-                        fileName: '',
-                        fileType: '',
-                        fileContent: null
-                    };
-                    if (fileInput.value) fileInput.value.value = '';
-                };
-
-                const submitUpload = async () => {
-                    if (!canUpload.value) return;
-                    
-                    uploading.value = true;
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    const fileName = uploadForm.value.fileName;
-                    const now = new Date().toISOString();
-                    const type = uploadForm.value.fileType;
-                    
-                    const newDoc = {
-                        id: docIdCounter++,
-                        number: fileName.replace(/\.[^/.]+$/, ""),
-                        status: 'processing',
-                        version: 1,
-                        updatedAt: now,
-                        projectId: uploadForm.value.projectId,
-                        responsibleId: uploadForm.value.responsibleId,
-                        fileType: type,
-                        versions: [{
-                            id: versionIdCounter++,
-                            number: 1,
-                            uploadedAt: now,
-                            uploadedBy: uploadForm.value.responsibleId,
-                            comment: uploadForm.value.comment || 'Загрузка файла'
-                        }]
-                    };
-                    
-                    documents.value.unshift(newDoc);
-                    
-                    auditLogs.value.unshift({
-                        id: logIdCounter++,
-                        type: 'upload',
-                        userId: uploadForm.value.responsibleId,
-                        projectId: uploadForm.value.projectId,
-                        message: `Загружен: ${fileName} (${type.toUpperCase()})`,
-                        time: now
-                    });
-                    
-                    setTimeout(() => {
-                        const doc = documents.value.find(d => d.id === newDoc.id);
-                        if (doc) {
-                            const isError = type === 'xml' ? Math.random() > 0.7 : Math.random() > 0.9;
-                            doc.status = isError ? 'invalid' : 'valid';
-                            
-                            auditLogs.value.unshift({
-                                id: logIdCounter++,
-                                type: doc.status === 'valid' ? 'upload' : 'error',
-                                userId: 'system',
-                                projectId: doc.projectId,
-                                message: doc.status === 'valid' 
-                                    ? `Проверка успешна: ${doc.number}` 
-                                    : `Ошибка проверки: ${doc.number}`,
-                                time: new Date().toISOString()
-                            });
-                        }
-                        uploading.value = false;
-                        resetUploadForm();
-                    }, 1500);
-                };
+                onMounted(() => {
+                    window.addEventListener('resize', handleResize);
+                    window.addEventListener('keydown', handleKeydown);
+                    // Initialize upload form with current project
+                    resetUploadForm();
+                });
+                onUnmounted(() => {
+                    window.removeEventListener('resize', handleResize);
+                    window.removeEventListener('keydown', handleKeydown);
+                });
 
                 return {
-                    role, currentTab, currentTabName, selectedDoc, showUserMenu, uploading,
-                    selectedProject, projects, employees, currentUser, documents, auditLogs,
-                    uploadForm, searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
-                    filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, fileInput,
-                    showNewProjectModal, newProjectForm, projectColors, projectIcons,
-                    showNewVersionModal, newVersionForm, uploadingNewVersion, canSubmitNewVersion, newVersionFileInput,
+                    // State
+                    role, currentTab, modalTab, currentTabName, selectedDoc, showUserMenu, uploading,
+                    selectedProject, selectedOrder, sidebarOpen, sidebarCollapsed, isMobile,
+                    expandedProjects, expandedOrders, showNewProjectModal, showNewVersionModal, uploadingNewVersion,
+                    projects, orders, employees, currentUser, documents, auditLogs,
+                    uploadForm, newVersionForm, newProjectForm, projectColors, projectIcons,
+                    searchQuery, filterResponsible, filterStatus, filterType, hasActiveFilters,
+                    filteredDocuments, filteredAuditLogs, totalDocsCount, canUpload, canSubmitNewVersion,
+                    fileInput, newVersionFileInput, xmlEditorContent, sidebarClasses,
                     
-                    getProjectName, getProjectColor, getProjectDocsCount, getProjectBadgeStyle,
+                    // Helpers
+                    getProjectName, getProjectColor, getOrderName, getOrdersByProject, getDocumentsByOrder,
                     getUserName, getUserRole, getUserColor, getInitials, getUserInitials,
-                    getFileIcon, getFileIconClass, getFileTypeName, getFileExtension,
-                    formatDate, formatTime, statusBadge, statusText, navClass, logIcon, logIconClass,
+                    getProjectDocsCount, getProjectBadgeStyle,
+                    getFileIcon, getFileIconColor, getFileIconClass, getFileTypeName, getFileExtension,
+                    formatDate, formatTime, statusBadge, statusBadgeMini, statusText, statusTextMini, navClass,
+                    logIcon, logIconClass,
                     
-                    selectProject, resetFilters, openNewProjectModal, createProject,
+                    // Actions
+                    toggleSidebar, toggleSidebarCollapse, navigateTo, selectProject, toggleOrderExpand,
+                    toggleUserMenu, openNewProjectModal, createProject,
                     downloadFile, downloadVersion, triggerDownload,
+                    formatXML, saveXMLEdit,
                     openNewVersionModal, triggerNewVersionUpload, handleNewVersionFile, submitNewVersion,
-                    openModal, closeModal, toggleUserMenu,
-                    triggerUpload, handleFile, resetUploadForm, submitUpload
+                    triggerUpload, handleFile, resetUploadForm, submitUpload,
+                    openModal, closeModal, resetFilters
                 };
             }
         }).mount('#app');
